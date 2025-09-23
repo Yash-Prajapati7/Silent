@@ -24,9 +24,9 @@ export const apiService = {
   },
 
   // Create a new room
-  createRoom: async (creator) => {
+  createRoom: async (creator, password = null) => {
     try {
-      const response = await api.post('/create-room', { creator });
+      const response = await api.post('/create-room', { creator, password });
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.error || 'Failed to create room');
@@ -34,9 +34,9 @@ export const apiService = {
   },
 
   // Join an existing room
-  joinRoom: async (roomId, userName) => {
+  joinRoom: async (roomId, userName, password = null) => {
     try {
-      const response = await api.post('/join-room', { roomId, userName });
+      const response = await api.post('/join-room', { roomId, userName, password });
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.error || 'Failed to join room');
@@ -90,6 +90,16 @@ export const apiService = {
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.error || 'Failed to get chat history');
+    }
+  },
+
+  // Check if room requires password
+  checkRoomPassword: async (roomId) => {
+    try {
+      const response = await api.get(`/room/${roomId}/password-check`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Failed to check room password requirement');
     }
   },
 

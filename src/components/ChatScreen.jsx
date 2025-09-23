@@ -239,7 +239,7 @@ const ChatScreen = () => {
     try {
       setIsLoading(true);
       
-      // End room via API
+      // End room
       await apiService.endRoom(roomId, userName);
       
       // Reset state and go home

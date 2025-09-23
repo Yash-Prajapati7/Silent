@@ -1,18 +1,67 @@
-import React from 'react';
-import { Users, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users, Plus, ArrowLeft, Dice6, Loader2 } from 'lucide-react';
 import { useIsDarkMode } from '../stores/themeStore';
-import { useSetState, APP_STATES } from '../stores/appStore';
+import { useSetState, useSetUserData, APP_STATES } from '../stores/appStore';
+import { apiService } from '../services/api';
 
 const HomeScreen = () => {
   const isDarkMode = useIsDarkMode();
   const setState = useSetState();
+  const setUserData = useSetUserData();
+  
+  const [showUsernameInput, setShowUsernameInput] = useState(false);
+  const [nextAction, setNextAction] = useState(''); // 'create' or 'join'
+  const [userName, setUserName] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleJoinRoom = () => {
-    setState(APP_STATES.JOINING);
+    setNextAction('join');
+    setShowUsernameInput(true);
   };
 
   const handleCreateRoom = () => {
-    setState(APP_STATES.CREATING);
+    setNextAction('create');
+    setShowUsernameInput(true);
+  };
+
+  const generateRandomName = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiService.getRandomNames(1);
+      if (response.success && response.names.length > 0) {
+        setUserName(response.names[0]);
+      }
+    } catch (error) {
+      setError('Failed to generate random name');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUsernameSubmit = (e) => {
+    e.preventDefault();
+    if (!userName.trim()) {
+      setError('Username is required');
+      return;
+    }
+
+    // Store username in global state
+    setUserData({ userName: userName.trim() });
+    
+    // Navigate to appropriate flow
+    if (nextAction === 'create') {
+      setState(APP_STATES.CREATING);
+    } else {
+      setState(APP_STATES.JOINING);
+    }
+  };
+
+  const handleBack = () => {
+    setShowUsernameInput(false);
+    setNextAction('');
+    setUserName('');
+    setError('');
   };
 
   return (
@@ -60,42 +109,129 @@ const HomeScreen = () => {
           </p>
         </div>
 
-        {/* Buttons */}
-        <div className="space-y-6">
-          <button
-            onClick={handleJoinRoom}
-            className={`
-              w-full py-5 px-8 rounded-2xl font-bold text-lg
-              transition-all duration-300 transform hover:scale-105 active:scale-95
-              flex items-center justify-center gap-3 group
-              ${isDarkMode
-                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
-                : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600'
-              }
-              shadow-2xl hover:shadow-3xl backdrop-blur-lg
-            `}
-          >
-            <Users className="w-6 h-6 transition-transform duration-300" />
-            Join Room
-          </button>
+        {/* Content */}
+        {!showUsernameInput ? (
+          /* Buttons */
+          <div className="space-y-6">
+            <button
+              onClick={handleJoinRoom}
+              className={`
+                w-full py-5 px-8 rounded-2xl font-bold text-lg
+                transition-all duration-300 transform hover:scale-105 active:scale-95
+                flex items-center justify-center gap-3 group
+                ${isDarkMode
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
+                  : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600'
+                }
+                shadow-2xl hover:shadow-3xl backdrop-blur-lg
+              `}
+            >
+              <Users className="w-6 h-6 transition-transform duration-300" />
+              Join Room
+            </button>
 
-          <button
-            onClick={handleCreateRoom}
-            className={`
-              w-full py-5 px-8 rounded-2xl font-bold text-lg
-              transition-all duration-300 transform hover:scale-105 active:scale-95
-              flex items-center justify-center gap-3 group
-              ${isDarkMode
-                ? 'bg-gray-800/80 text-white hover:bg-gray-700/80 border-2 border-gray-600/50'
-                : 'bg-white/80 text-gray-900 hover:bg-gray-50/80 border-2 border-gray-300/50'
-              }
-              backdrop-blur-lg shadow-xl hover:shadow-2xl
-            `}
-          >
-            <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
-            Create Room
-          </button>
-        </div>
+            <button
+              onClick={handleCreateRoom}
+              className={`
+                w-full py-5 px-8 rounded-2xl font-bold text-lg
+                transition-all duration-300 transform hover:scale-105 active:scale-95
+                flex items-center justify-center gap-3 group
+                ${isDarkMode
+                  ? 'bg-gray-800/80 text-white hover:bg-gray-700/80 border-2 border-gray-600/50'
+                  : 'bg-white/80 text-gray-900 hover:bg-gray-50/80 border-2 border-gray-300/50'
+                }
+                backdrop-blur-lg shadow-xl hover:shadow-2xl
+              `}
+            >
+              <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
+              Create Room
+            </button>
+          </div>
+        ) : (
+          /* Username Input Form */
+          <div className="space-y-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <button
+                onClick={handleBack}
+                className={`
+                  p-2 rounded-lg transition-colors duration-200
+                  ${isDarkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-white/10'
+                    : 'text-gray-700 hover:text-black hover:bg-black/10'
+                  }
+                `}
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h2 className={`
+                text-2xl font-bold
+                ${isDarkMode ? 'text-white' : 'text-gray-900'}
+              `}>
+                Choose Username
+              </h2>
+            </div>
+
+            <form onSubmit={handleUsernameSubmit} className="space-y-4">
+              <div className="space-y-3">
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    placeholder="Enter your username"
+                    className={`
+                      flex-1 px-4 py-3 rounded-lg border-2 transition-colors duration-200
+                      ${isDarkMode
+                        ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-white focus:bg-gray-700'
+                        : 'bg-white border-gray-300 text-black placeholder-gray-500 focus:border-black focus:bg-gray-50'
+                      }
+                      focus:outline-none
+                    `}
+                    maxLength={20}
+                  />
+                  <button
+                    type="button"
+                    onClick={generateRandomName}
+                    disabled={isLoading}
+                    className={`
+                      px-4 py-3 rounded-lg border-2 transition-colors duration-200
+                      ${isDarkMode
+                        ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                        : 'bg-white border-gray-300 text-black hover:bg-gray-50'
+                      }
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                    `}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Dice6 className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+
+                {error && (
+                  <p className="text-red-500 text-sm">{error}</p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={!userName.trim()}
+                className={`
+                  w-full py-3 px-6 rounded-lg font-medium transition-all duration-200
+                  ${isDarkMode
+                    ? 'bg-white text-black hover:bg-gray-100 disabled:bg-gray-600 disabled:text-gray-400'
+                    : 'bg-black text-white hover:bg-gray-900 disabled:bg-gray-300 disabled:text-gray-500'
+                  }
+                  disabled:cursor-not-allowed
+                `}
+              >
+                {nextAction === 'create' ? 'Continue to Create Room' : 'Continue to Join Room'}
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="text-center pt-8">

@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { Copy, Check, Dice6, Loader2 } from 'lucide-react';
+import { Copy, Check, Loader2 } from 'lucide-react';
 import Modal from './Modal';
 import { useIsDarkMode } from '../stores/themeStore';
-import { 
-  useCurrentState, 
-  useSetState, 
-  useSetRoomData, 
-  useSetUserData, 
-  useUpdateParticipants, 
-  useAddNotification, 
-  APP_STATES 
+import {
+  useCurrentState,
+  useSetState,
+  useSetRoomData,
+  useUserName,
+  useUpdateParticipants,
+  useAddNotification,
+  APP_STATES
 } from '../stores/appStore';
 import { apiService } from '../services/api';
 
@@ -18,12 +18,14 @@ const CreateRoomModal = () => {
   const currentState = useCurrentState();
   const setState = useSetState();
   const setRoomData = useSetRoomData();
-  const setUserData = useSetUserData();
+  const userName = useUserName(); // Get username from store
   const updateParticipants = useUpdateParticipants();
   const addNotification = useAddNotification();
-  const [step, setStep] = useState(1); // 1: Creating room, 2: Username
+
+  const [step, setStep] = useState(1); // 1: Password setup, 2: Room created
   const [roomId, setRoomId] = useState(null);
-  const [userName, setUserName] = useState('');
+  const [password, setPassword] = useState('');
+  const [hasPassword, setHasPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -33,27 +35,21 @@ const CreateRoomModal = () => {
   const handleClose = () => {
     setStep(1);
     setRoomId(null);
-    setUserName('');
+    setPassword('');
+    setHasPassword(false);
     setError('');
     setCopied(false);
     setState(APP_STATES.HOME);
   };
 
-  React.useEffect(() => {
-    if (isOpen && step === 1) {
-      createRoom();
-    }
-  }, [isOpen]);
-
   const createRoom = async () => {
     try {
       setIsLoading(true);
       setError('');
-      
-      // Use a temporary creator name for room creation - we'll update it when joining
-      const tempCreatorName = `Creator_${Date.now()}`;
-      const response = await apiService.createRoom(tempCreatorName);
-      
+
+      const roomPassword = hasPassword ? password.trim() : null;
+      const response = await apiService.createRoom(userName, roomPassword);
+
       if (response.success) {
         setRoomId(response.roomId);
         setStep(2);
@@ -83,37 +79,25 @@ const CreateRoomModal = () => {
     }
   };
 
-  const generateRandomName = async () => {
-    try {
-      setIsLoading(true);
-      const response = await apiService.getRandomNames(1);
-      if (response.success && response.names.length > 0) {
-        setUserName(response.names[0]);
-      }
-    } catch (error) {
-      setError('Failed to generate random name');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCreateRoom = async (e) => {
+  const handlePasswordSetup = (e) => {
     e.preventDefault();
-    if (!userName.trim()) {
-      setError('Username is required');
+    if (hasPassword && !password.trim()) {
+      setError('Password is required when enabled');
       return;
     }
+    createRoom();
+  };
 
+  const handleJoinRoom = async () => {
     try {
       setIsLoading(true);
       setError('');
 
-      // Join the room as the creator with the chosen username
-      const response = await apiService.joinRoom(roomId, userName.trim());
-      
+      const roomPassword = hasPassword ? password.trim() : null;
+      const response = await apiService.joinRoom(roomId, userName, roomPassword);
+
       if (response.success) {
         setRoomData({ roomId, isCreator: true });
-        setUserData({ userName: userName.trim() });
         updateParticipants(response.participants || []);
         setState(APP_STATES.CHATTING);
       }
@@ -126,191 +110,214 @@ const CreateRoomModal = () => {
 
   const renderStep1 = () => (
     <div className="space-y-6">
-      {isLoading ? (
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className={`w-8 h-8 animate-spin ${isDarkMode ? 'text-white' : 'text-black'}`} />
-          <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            Creating your room...
-          </p>
-        </div>
-      ) : error ? (
-        <div className="text-center space-y-4">
+      <div className="text-center">
+        <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+          Room Settings
+        </h3>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+          Configure your room options
+        </p>
+      </div>
+
+      {error && (
+        <div className="text-center">
           <p className="text-red-500 text-sm">{error}</p>
-          <button
-            onClick={createRoom}
-            className={`
-              px-6 py-3 rounded-lg font-medium transition-colors
-              ${isDarkMode
-                ? 'bg-white text-black hover:bg-gray-100'
-                : 'bg-black text-white hover:bg-gray-900'
-              }
-            `}
-          >
-            Try Again
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <div className="text-center">
-            <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Your room has been created!
-            </p>
-            
-            <div className={`
-              p-4 rounded-lg border-2 border-dashed
-              ${isDarkMode ? 'border-gray-600 bg-gray-900' : 'border-gray-300 bg-gray-50'}
-            `}>
-              <p className={`text-xs mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Room ID
-              </p>
-              <div className="flex items-center justify-center gap-3">
-                <span className={`text-3xl font-mono font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>
-                  {roomId}
-                </span>
-                <button
-                  onClick={copyRoomId}
-                  className={`
-                    p-2 rounded-lg transition-colors
-                    ${isDarkMode
-                      ? 'hover:bg-white/10 text-white'
-                      : 'hover:bg-black/10 text-black'
-                    }
-                  `}
-                  title="Copy room ID"
-                >
-                  {copied ? (
-                    <Check className="w-5 h-5 text-green-500" />
-                  ) : (
-                    <Copy className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <p className={`text-xs text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            Share this Room ID with others so they can join your conversation
-          </p>
-          
-          <button
-            onClick={() => setStep(2)}
-            className={`
-              w-full py-3 px-4 rounded-lg font-medium transition-colors
-              ${isDarkMode
-                ? 'bg-white text-black hover:bg-gray-100'
-                : 'bg-black text-white hover:bg-gray-900'
-              }
-            `}
-          >
-            Proceed
-          </button>
         </div>
       )}
+
+      <form onSubmit={handlePasswordSetup} className="space-y-6">
+        {/* Password Toggle */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                Room Password
+              </h4>
+              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Add a password to make your room private
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setHasPassword(!hasPassword);
+                if (!hasPassword) setPassword('');
+              }}
+              className={`
+                relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                ${hasPassword
+                  ? isDarkMode ? 'bg-blue-600' : 'bg-blue-500'
+                  : isDarkMode ? 'bg-gray-600' : 'bg-gray-300'
+                }
+              `}
+            >
+              <span
+                className={`
+                  inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                  ${hasPassword ? 'translate-x-6' : 'translate-x-1'}
+                `}
+              />
+            </button>
+          </div>
+
+          {hasPassword && (
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter room password"
+              className={`
+                w-full px-4 py-3 rounded-lg border-2 transition-colors duration-200
+                ${isDarkMode
+                  ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-white focus:bg-gray-700'
+                  : 'bg-white border-gray-300 text-black placeholder-gray-500 focus:border-black focus:bg-gray-50'
+                }
+                focus:outline-none
+              `}
+              maxLength={50}
+            />
+          )}
+        </div>
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          className={`
+            w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2
+            ${isDarkMode
+              ? 'bg-white text-black hover:bg-gray-100 disabled:bg-gray-600 disabled:text-gray-400'
+              : 'bg-black text-white hover:bg-gray-900 disabled:bg-gray-300 disabled:text-gray-500'
+            }
+            disabled:cursor-not-allowed
+          `}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Creating Room...</span>
+            </>
+          ) : (
+            <span>Create Room</span>
+          )}
+        </button>
+      </form>
     </div>
   );
 
   const renderStep2 = () => (
-    <form onSubmit={handleCreateRoom}>
-      <div className="space-y-4">
+    <div className="space-y-6">
+      <div className="text-center">
+        <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+          Room Created Successfully!
+        </h3>
         <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-          Choose your username for room {roomId}
+          Share these details with others to join
         </p>
-        
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={userName}
-              onChange={(e) => {
-                setUserName(e.target.value);
-                setError('');
-              }}
-              placeholder="Enter username"
-              className={`
-                flex-1 px-4 py-3 rounded-lg border
-                focus:outline-none focus:ring-2 transition-colors
-                ${isDarkMode
-                  ? 'bg-gray-900 border-gray-600 text-white focus:ring-white/30 placeholder-gray-500'
-                  : 'bg-gray-50 border-gray-300 text-black focus:ring-black/30 placeholder-gray-400'
-                }
-              `}
-              maxLength={20}
-            />
-            
+      </div>
+
+      {/* Room Details */}
+      <div className="space-y-4">
+        {/* Room ID */}
+        <div className={`
+          p-4 rounded-lg border-2 border-dashed
+          ${isDarkMode ? 'border-gray-600 bg-gray-800/50' : 'border-gray-300 bg-gray-50'}
+        `}>
+          <p className={`text-xs mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            Room ID
+          </p>
+          <div className="flex items-center justify-between">
+            <span className={`text-3xl font-mono font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>
+              {roomId}
+            </span>
             <button
-              type="button"
-              onClick={generateRandomName}
-              disabled={isLoading}
+              onClick={copyRoomId}
               className={`
-                p-3 rounded-lg transition-colors
+                p-2 rounded-lg transition-colors
                 ${isDarkMode
-                  ? 'bg-gray-800 text-white hover:bg-gray-700 border border-gray-600'
-                  : 'bg-gray-200 text-black hover:bg-gray-300 border border-gray-400'
+                  ? 'hover:bg-white/10 text-white'
+                  : 'hover:bg-black/10 text-black'
                 }
-                disabled:opacity-50 disabled:cursor-not-allowed
               `}
-              title="Generate random name"
+              title="Copy room ID"
             >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+              {copied ? (
+                <Check className="w-5 h-5 text-green-500" />
               ) : (
-                <Dice6 className="w-5 h-5" />
+                <Copy className="w-5 h-5" />
               )}
             </button>
           </div>
         </div>
-        
-        {error && (
-          <p className="text-red-500 text-sm">{error}</p>
+
+        {/* Password (if set) */}
+        {hasPassword && (
+          <div className={`
+            p-4 rounded-lg border-2 border-dashed
+            ${isDarkMode ? 'border-yellow-600/50 bg-yellow-800/20' : 'border-yellow-300 bg-yellow-50'}
+          `}>
+            <p className={`text-xs mb-2 ${isDarkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
+              Password
+            </p>
+            <div className="flex items-center justify-between">
+              <span className={`font-mono font-medium ${isDarkMode ? 'text-white' : 'text-black'}`}>
+                {password}
+              </span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(password);
+                  addNotification({ type: 'success', message: 'Password copied!' });
+                }}
+                className={`
+                  p-2 rounded-lg transition-colors
+                  ${isDarkMode
+                    ? 'hover:bg-white/10 text-white'
+                    : 'hover:bg-black/10 text-black'
+                  }
+                `}
+                title="Copy password"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         )}
-        
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={handleClose}
-            className={`
-              px-4 py-3 rounded-lg font-medium transition-colors
-              ${isDarkMode
-                ? 'text-white hover:bg-white/10'
-                : 'text-black hover:bg-black/10'
-              }
-            `}
-          >
-            Cancel
-          </button>
-          
-          <button
-            type="submit"
-            disabled={!userName.trim() || isLoading}
-            className={`
-              flex-1 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2
-              ${userName.trim() && !isLoading
-                ? isDarkMode
-                  ? 'bg-white text-black hover:bg-gray-100'
-                  : 'bg-black text-white hover:bg-gray-900'
-                : 'bg-gray-500 text-gray-300 cursor-not-allowed'
-              }
-            `}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              'Enter Room'
-            )}
-          </button>
-        </div>
       </div>
-    </form>
+
+      {error && (
+        <div className="text-center">
+          <p className="text-red-500 text-sm">{error}</p>
+        </div>
+      )}
+
+      <button
+        onClick={handleJoinRoom}
+        disabled={isLoading}
+        className={`
+          w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2
+          ${isDarkMode
+            ? 'bg-white text-black hover:bg-gray-100 disabled:bg-gray-600 disabled:text-gray-400'
+            : 'bg-black text-white hover:bg-gray-900 disabled:bg-gray-300 disabled:text-gray-500'
+          }
+          disabled:cursor-not-allowed
+        `}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>Joining Room...</span>
+          </>
+        ) : (
+          <span>Join Room & Start Chatting</span>
+        )}
+      </button>
+    </div>
   );
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={step === 1 ? "Creating Room" : "Choose Username"}
+      title={step === 1 ? "Room Settings" : "Room Created"}
       showCloseButton={!isLoading}
     >
       {step === 1 ? renderStep1() : renderStep2()}

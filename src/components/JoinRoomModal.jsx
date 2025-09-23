@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Dice6, Loader2 } from 'lucide-react';
+import { ArrowLeft, Lock, Loader2 } from 'lucide-react';
 import Modal from './Modal';
 import { useIsDarkMode } from '../stores/themeStore';
 import { 
   useCurrentState, 
   useSetState, 
   useSetRoomData, 
-  useSetUserData, 
+  useUserName,
   useUpdateParticipants, 
   useAddNotification, 
   APP_STATES 
@@ -18,12 +18,13 @@ const JoinRoomModal = () => {
   const currentState = useCurrentState();
   const setState = useSetState();
   const setRoomData = useSetRoomData();
-  const setUserData = useSetUserData();
+  const userName = useUserName(); // Get username from store
   const updateParticipants = useUpdateParticipants();
   const addNotification = useAddNotification();
-  const [step, setStep] = useState(1); // 1: Room ID, 2: Username
+  const [step, setStep] = useState(1); // 1: Room ID, 2: Password (if needed)
   const [roomId, setRoomId] = useState('');
-  const [userName, setUserName] = useState('');
+  const [password, setPassword] = useState('');
+  const [requiresPassword, setRequiresPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,51 +33,51 @@ const JoinRoomModal = () => {
   const handleClose = () => {
     setStep(1);
     setRoomId('');
-    setUserName('');
+    setPassword('');
+    setRequiresPassword(false);
     setError('');
     setState(APP_STATES.HOME);
   };
 
-  const handleRoomIdSubmit = (e) => {
+  const handleRoomIdSubmit = async (e) => {
     e.preventDefault();
-    if (roomId.trim().length === 4) {
-      setStep(2);
-      setError('');
-    } else {
+    if (roomId.trim().length !== 4) {
       setError('Room ID must be 4 digits');
-    }
-  };
-
-  const generateRandomName = async () => {
-    try {
-      setIsLoading(true);
-      const response = await apiService.getRandomNames(1);
-      if (response.success && response.names.length > 0) {
-        setUserName(response.names[0]);
-      }
-    } catch (error) {
-      setError('Failed to generate random name');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleJoinRoom = async (e) => {
-    e.preventDefault();
-    if (!userName.trim()) {
-      setError('Username is required');
       return;
     }
 
     try {
       setIsLoading(true);
       setError('');
+      
+      // Check if room exists and requires password
+      const response = await apiService.checkRoomPassword(parseInt(roomId));
+      
+      if (response.success) {
+        if (response.hasPassword) {
+          setRequiresPassword(true);
+          setStep(2);
+        } else {
+          // Room doesn't need password, join directly
+          joinRoom();
+        }
+      }
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      const response = await apiService.joinRoom(parseInt(roomId), userName.trim());
+  const joinRoom = async (roomPassword = null) => {
+    try {
+      setIsLoading(true);
+      setError('');
+
+      const response = await apiService.joinRoom(parseInt(roomId), userName, roomPassword);
       
       if (response.success) {
         setRoomData({ roomId: parseInt(roomId), isCreator: false });
-        setUserData({ userName: userName.trim() });
         updateParticipants(response.participants || []);
         setState(APP_STATES.CHATTING);
       }
@@ -87,11 +88,21 @@ const JoinRoomModal = () => {
     }
   };
 
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (!password.trim()) {
+      setError('Password is required');
+      return;
+    }
+
+    await joinRoom(password.trim());
+  };
+
   const renderStep1 = () => (
     <form onSubmit={handleRoomIdSubmit}>
       <div className="space-y-4">
         <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-          Enter the 4-digit room ID to join
+          Enter the 4-digit room ID to join as <span className="font-medium">{userName}</span>
         </p>
         
         <input
@@ -136,10 +147,10 @@ const JoinRoomModal = () => {
           
           <button
             type="submit"
-            disabled={roomId.length !== 4}
+            disabled={roomId.length !== 4 || isLoading}
             className={`
-              flex-1 py-3 px-4 rounded-lg font-medium transition-colors
-              ${roomId.length === 4
+              flex-1 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2
+              ${roomId.length === 4 && !isLoading
                 ? isDarkMode
                   ? 'bg-white text-black hover:bg-gray-100'
                   : 'bg-black text-white hover:bg-gray-900'
@@ -147,7 +158,14 @@ const JoinRoomModal = () => {
               }
             `}
           >
-            Next
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Checking...
+              </>
+            ) : (
+              'Check Room'
+            )}
           </button>
         </div>
       </div>
@@ -155,58 +173,39 @@ const JoinRoomModal = () => {
   );
 
   const renderStep2 = () => (
-    <form onSubmit={handleJoinRoom}>
+    <form onSubmit={handlePasswordSubmit}>
       <div className="space-y-4">
-        <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-          Choose your username for room {roomId}
-        </p>
-        
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={userName}
-              onChange={(e) => {
-                setUserName(e.target.value);
-                setError('');
-              }}
-              placeholder="Enter username"
-              className={`
-                flex-1 px-4 py-3 rounded-lg border
-                focus:outline-none focus:ring-2 transition-colors
-                ${isDarkMode
-                  ? 'bg-gray-900 border-gray-600 text-white focus:ring-white/30 placeholder-gray-500'
-                  : 'bg-gray-50 border-gray-300 text-black focus:ring-black/30 placeholder-gray-400'
-                }
-              `}
-              maxLength={20}
-            />
-            
-            <button
-              type="button"
-              onClick={generateRandomName}
-              disabled={isLoading}
-              className={`
-                p-3 rounded-lg transition-colors
-                ${isDarkMode
-                  ? 'bg-gray-800 text-white hover:bg-gray-700 border border-gray-600'
-                  : 'bg-gray-200 text-black hover:bg-gray-300 border border-gray-400'
-                }
-                disabled:opacity-50 disabled:cursor-not-allowed
-              `}
-              title="Generate random name"
-            >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Dice6 className="w-5 h-5" />
-              )}
-            </button>
+        <div className="text-center">
+          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-3 ${isDarkMode ? 'bg-yellow-800/20' : 'bg-yellow-100'}`}>
+            <Lock className={`w-6 h-6 ${isDarkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
           </div>
+          <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+            Room {roomId} is password protected
+          </p>
         </div>
         
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setError('');
+          }}
+          placeholder="Enter room password"
+          className={`
+            w-full px-4 py-3 rounded-lg border-2 text-center transition-colors duration-200
+            ${isDarkMode
+              ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-white focus:bg-gray-700'
+              : 'bg-white border-gray-300 text-black placeholder-gray-500 focus:border-black focus:bg-gray-50'
+            }
+            focus:outline-none
+          `}
+          maxLength={50}
+          autoComplete="off"
+        />
+        
         {error && (
-          <p className="text-red-500 text-sm">{error}</p>
+          <p className="text-red-500 text-sm text-center">{error}</p>
         )}
         
         <div className="flex gap-3">
@@ -227,10 +226,10 @@ const JoinRoomModal = () => {
           
           <button
             type="submit"
-            disabled={!userName.trim() || isLoading}
+            disabled={!password.trim() || isLoading}
             className={`
               flex-1 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2
-              ${userName.trim() && !isLoading
+              ${password.trim() && !isLoading
                 ? isDarkMode
                   ? 'bg-white text-black hover:bg-gray-100'
                   : 'bg-black text-white hover:bg-gray-900'
@@ -256,7 +255,8 @@ const JoinRoomModal = () => {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={step === 1 ? "Join Room" : "Choose Username"}
+      title={step === 1 ? "Join Room" : "Room Password"}
+      showCloseButton={!isLoading}
     >
       {step === 1 ? renderStep1() : renderStep2()}
     </Modal>

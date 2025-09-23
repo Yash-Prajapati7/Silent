@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { useCurrentState, useNotifications, useRemoveNotification, useClearNotifications, APP_STATES } from './stores/appStore';
-import ThemeToggle from './components/ThemeToggle';
 import ConnectionStatus from './components/ConnectionStatus';
 import HomeScreen from './components/HomeScreen';
 import JoinRoomModal from './components/JoinRoomModal';
@@ -29,7 +28,6 @@ function App() {
       {/* Show theme toggle and connection status only on home screen */}
       {currentState === APP_STATES.HOME && (
         <>
-          <ThemeToggle />
           <ConnectionStatus />
         </>
       )}

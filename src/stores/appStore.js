@@ -15,6 +15,7 @@ export const useAppStore = create((set, get) => ({
         roomId: null,
         userName: null,
         isCreator: false,
+        roomPassword: null,
         participants: [],
         messages: [],
         notifications: [],
@@ -26,7 +27,8 @@ export const useAppStore = create((set, get) => ({
 
         setRoomData: (roomData) => set({
           roomId: roomData.roomId,
-          isCreator: roomData.isCreator || false
+          isCreator: roomData.isCreator || false,
+          roomPassword: roomData.password || null
         }),
 
         setUserData: (userData) => set({
@@ -101,6 +103,7 @@ export const useCurrentState = () => useAppStore((state) => state.currentState);
 export const useRoomId = () => useAppStore((state) => state.roomId);
 export const useUserName = () => useAppStore((state) => state.userName);
 export const useIsCreator = () => useAppStore((state) => state.isCreator);
+export const useRoomPassword = () => useAppStore((state) => state.roomPassword);
 export const useMessages = () => useAppStore((state) => state.messages);
 export const useParticipants = () => useAppStore((state) => state.participants);
 export const useNotifications = () => useAppStore((state) => state.notifications);

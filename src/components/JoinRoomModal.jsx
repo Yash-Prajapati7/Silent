@@ -24,7 +24,10 @@ const JoinRoomModal = () => {
   const [step, setStep] = useState(1); // 1: Room ID, 2: Password (if needed)
   const [roomId, setRoomId] = useState('');
   const [password, setPassword] = useState('');
+  const [creatorPassword, setCreatorPassword] = useState('');
   const [requiresPassword, setRequiresPassword] = useState(false);
+  const [requiresCreatorPassword, setRequiresCreatorPassword] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -34,7 +37,10 @@ const JoinRoomModal = () => {
     setStep(1);
     setRoomId('');
     setPassword('');
+    setCreatorPassword('');
     setRequiresPassword(false);
+    setRequiresCreatorPassword(false);
+    setIsCreator(false);
     setError('');
     setState(APP_STATES.HOME);
   };
@@ -74,14 +80,28 @@ const JoinRoomModal = () => {
       setIsLoading(true);
       setError('');
 
-      const response = await apiService.joinRoom(parseInt(roomId), userName, roomPassword);
+      const roomCreatorPassword = isCreator && requiresCreatorPassword ? creatorPassword.trim() : null;
+      const response = await apiService.joinRoom(parseInt(roomId), userName, roomPassword, roomCreatorPassword);
       
       if (response.success) {
-        setRoomData({ roomId: parseInt(roomId), isCreator: false });
+        setRoomData({ roomId: parseInt(roomId), isCreator: response.isCreator || false });
         updateParticipants(response.participants || []);
         setState(APP_STATES.CHATTING);
       }
     } catch (error) {
+      // Check if error is about creator password requirement
+      if (error.message.includes('Creator password required')) {
+        setRequiresCreatorPassword(true);
+        setIsCreator(true);
+        setStep(2);
+        setError('');
+        return;
+      }
+      // Check if it's an incorrect creator password error
+      if (error.message.includes('Incorrect creator password')) {
+        setError('Incorrect creator password. Please try again.');
+        return;
+      }
       setError(error.message);
     } finally {
       setIsLoading(false);
@@ -90,12 +110,18 @@ const JoinRoomModal = () => {
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
-    if (!password.trim()) {
-      setError('Password is required');
+    
+    if (requiresCreatorPassword && !creatorPassword.trim()) {
+      setError('Creator password is required');
+      return;
+    }
+    
+    if (requiresPassword && !password.trim()) {
+      setError('Room password is required');
       return;
     }
 
-    await joinRoom(password.trim());
+    await joinRoom(requiresPassword ? password.trim() : null);
   };
 
   const renderStep1 = () => (
@@ -176,33 +202,70 @@ const JoinRoomModal = () => {
     <form onSubmit={handlePasswordSubmit}>
       <div className="space-y-4">
         <div className="text-center">
-          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-3 ${isDarkMode ? 'bg-yellow-800/20' : 'bg-yellow-100'}`}>
-            <Lock className={`w-6 h-6 ${isDarkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
+          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-3 ${
+            requiresCreatorPassword 
+              ? isDarkMode ? 'bg-green-800/20' : 'bg-green-100'
+              : isDarkMode ? 'bg-yellow-800/20' : 'bg-yellow-100'
+          }`}>
+            <Lock className={`w-6 h-6 ${
+              requiresCreatorPassword
+                ? isDarkMode ? 'text-green-400' : 'text-green-600'
+                : isDarkMode ? 'text-yellow-400' : 'text-yellow-600'
+            }`} />
           </div>
           <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            Room {roomId} is password protected
+            {requiresCreatorPassword 
+              ? `Welcome back, room creator! Room ${roomId} requires your creator password.`
+              : `Room ${roomId} is password protected`
+            }
           </p>
         </div>
         
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => {
-            setPassword(e.target.value);
-            setError('');
-          }}
-          placeholder="Enter room password"
-          className={`
-            w-full px-4 py-3 rounded-lg border-2 text-center transition-colors duration-200
-            ${isDarkMode
-              ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-white focus:bg-gray-700'
-              : 'bg-white border-gray-300 text-black placeholder-gray-500 focus:border-black focus:bg-gray-50'
-            }
-            focus:outline-none
-          `}
-          maxLength={50}
-          autoComplete="off"
-        />
+        {/* Room Password Input */}
+        {requiresPassword && (
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError('');
+            }}
+            placeholder="Enter room password"
+            className={`
+              w-full px-4 py-3 rounded-lg border-2 text-center transition-colors duration-200
+              ${isDarkMode
+                ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-white focus:bg-gray-700'
+                : 'bg-white border-gray-300 text-black placeholder-gray-500 focus:border-black focus:bg-gray-50'
+              }
+              focus:outline-none
+            `}
+            maxLength={50}
+            autoComplete="off"
+          />
+        )}
+
+        {/* Creator Password Input */}
+        {requiresCreatorPassword && (
+          <input
+            type="password"
+            value={creatorPassword}
+            onChange={(e) => {
+              setCreatorPassword(e.target.value);
+              setError('');
+            }}
+            placeholder="Enter creator password"
+            className={`
+              w-full px-4 py-3 rounded-lg border-2 text-center transition-colors duration-200
+              ${isDarkMode
+                ? 'bg-gray-800 border-green-600 text-white placeholder-gray-400 focus:border-green-500 focus:bg-gray-700'
+                : 'bg-white border-green-300 text-black placeholder-gray-500 focus:border-green-500 focus:bg-gray-50'
+              }
+              focus:outline-none
+            `}
+            maxLength={50}
+            autoComplete="off"
+          />
+        )}
         
         {error && (
           <p className="text-red-500 text-sm text-center">{error}</p>
@@ -226,10 +289,10 @@ const JoinRoomModal = () => {
           
           <button
             type="submit"
-            disabled={!password.trim() || isLoading}
+            disabled={(requiresPassword && !password.trim()) || (requiresCreatorPassword && !creatorPassword.trim()) || isLoading}
             className={`
               flex-1 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2
-              ${password.trim() && !isLoading
+              ${((requiresPassword && password.trim()) || (requiresCreatorPassword && creatorPassword.trim()) || (!requiresPassword && !requiresCreatorPassword)) && !isLoading
                 ? isDarkMode
                   ? 'bg-white text-black hover:bg-gray-100'
                   : 'bg-black text-white hover:bg-gray-900'
@@ -255,7 +318,7 @@ const JoinRoomModal = () => {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={step === 1 ? "Join Room" : "Room Password"}
+      title={step === 1 ? "Join Room" : requiresCreatorPassword ? "Creator Password" : "Room Password"}
       showCloseButton={!isLoading}
     >
       {step === 1 ? renderStep1() : renderStep2()}

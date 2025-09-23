@@ -2,9 +2,14 @@ import React from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { useIsDarkMode, useToggleTheme } from '../stores/themeStore';
 
-const ThemeToggle = ({ inline = false }) => {
+const ThemeToggle = ({ inline = false, showFixed = false }) => {
   const isDarkMode = useIsDarkMode();
   const toggleTheme = useToggleTheme();
+
+  // Don't render fixed position theme toggle unless explicitly requested
+  if (!inline && !showFixed) {
+    return null;
+  }
 
   return (
     <button

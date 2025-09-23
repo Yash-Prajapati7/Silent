@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, LogOut, X, Users } from 'lucide-react';
+import { Send, LogOut, X, Users, Github, Info, Copy } from 'lucide-react';
 import { useIsDarkMode } from '../stores/themeStore';
 import { 
   useCurrentState, 
   useRoomId,
   useUserName,
   useIsCreator,
+  useRoomPassword,
   useMessages, 
   useParticipants, 
   useTypingUsers,
@@ -27,6 +28,7 @@ const ChatScreen = () => {
   const roomId = useRoomId();
   const userName = useUserName();
   const isCreator = useIsCreator();
+  const roomPassword = useRoomPassword();
   const messages = useMessages();
   const participants = useParticipants();
   const typingUsers = useTypingUsers();
@@ -41,6 +43,7 @@ const ChatScreen = () => {
   const [localTypingUsers, setLocalTypingUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null });
+  const [showRoomInfo, setShowRoomInfo] = useState(false);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
@@ -292,14 +295,31 @@ const ChatScreen = () => {
       `}>
         <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-shrink-0">
-            <div className={`
-              w-10 h-10 rounded-xl flex items-center justify-center border-2 text-2xl
-              ${isDarkMode 
-                ? 'bg-white text-black border-white' 
-                : 'bg-black text-white border-black'
-              }
-            `}>
-              🤫
+            <div className="flex items-center gap-2">
+              <div className={`
+                w-10 h-10 rounded-xl flex items-center justify-center border-2 text-2xl
+                ${isDarkMode 
+                  ? 'bg-white text-black border-white' 
+                  : 'bg-black text-white border-black'
+                }
+              `}>
+                🤫
+              </div>
+              
+              {/* Room Info Button */}
+              <button
+                onClick={() => setShowRoomInfo(!showRoomInfo)}
+                className={`
+                  p-2 rounded-lg transition-all duration-200 hover:scale-105 relative
+                  ${isDarkMode
+                    ? 'text-white hover:bg-white/10'
+                    : 'text-black hover:bg-black/10'
+                  }
+                `}
+                title="Room Information"
+              >
+                <Info className="w-4 h-4" />
+              </button>
             </div>
             <div className="min-w-0">
               <h1 className="font-bold text-lg truncate">Room {roomId}</h1>
@@ -321,7 +341,7 @@ const ChatScreen = () => {
             ${isDarkMode ? 'bg-black border-white/20' : 'bg-white border-black/20'}
           `}>
             <Users className="w-4 h-4" />
-            <span className="font-medium">{participants.length - 1}</span>
+            <span className="font-medium">{participants.length}</span>
             <span className="text-sm opacity-75 hidden sm:inline">online</span>
           </div>
         </div>
@@ -361,10 +381,143 @@ const ChatScreen = () => {
             </button>
           )}
           
+          {/* GitHub Button */}
+          <div className="relative group">
+            <button
+              onClick={() => window.open('https://github.com/Yash-Prajapati7', '_blank')}
+              className={`
+                p-2 rounded-lg transition-all duration-200 hover:scale-105
+                ${isDarkMode
+                  ? 'text-white hover:bg-white/10'
+                  : 'text-black hover:bg-black/10'
+                }
+              `}
+              title="Visit GitHub Profile"
+            >
+              <Github className="w-5 h-5" />
+            </button>
+            
+            {/* Tooltip */}
+            <div className={`
+              absolute top-full right-0 mt-2 px-2 py-1 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10
+              ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-900 text-white'}
+            `}>
+              Yash-Prajapati7
+              <div className={`absolute bottom-full right-2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent ${isDarkMode ? 'border-b-gray-800' : 'border-b-gray-900'}`}></div>
+            </div>
+          </div>
+
           {/* Theme Toggle on the extreme right */}
           <ThemeToggle inline={true} />
         </div>
       </div>
+
+      {/* Room Info Dropdown */}
+      {showRoomInfo && (
+        <div className={`
+          fixed top-16 left-4 right-4 md:left-auto md:right-4 md:w-80 z-20 p-4 rounded-lg shadow-xl border backdrop-blur-lg
+          ${isDarkMode
+            ? 'bg-gray-900/95 border-gray-700 text-white'
+            : 'bg-white/95 border-gray-300 text-black'
+          }
+        `}>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">Room Details</h3>
+              <button
+                onClick={() => setShowRoomInfo(false)}
+                className={`
+                  p-1 rounded-lg transition-colors
+                  ${isDarkMode
+                    ? 'hover:bg-white/10'
+                    : 'hover:bg-black/10'
+                  }
+                `}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Room ID */}
+            <div className={`
+              p-3 rounded-lg border-2 border-dashed
+              ${isDarkMode ? 'border-gray-600 bg-gray-800/50' : 'border-gray-300 bg-gray-50'}
+            `}>
+              <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Room ID
+              </p>
+              <div className="flex items-center justify-between">
+                <span className={`text-2xl font-mono font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>
+                  {roomId}
+                </span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(roomId.toString());
+                    addNotification({ type: 'success', message: 'Room ID copied!' });
+                  }}
+                  className={`
+                    p-2 rounded-lg transition-colors
+                    ${isDarkMode
+                      ? 'hover:bg-white/10 text-white'
+                      : 'hover:bg-black/10 text-black'
+                    }
+                  `}
+                  title="Copy room ID"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Room Password (if exists) */}
+            {roomPassword && (
+              <div className={`
+                p-3 rounded-lg border-2 border-dashed
+                ${isDarkMode ? 'border-yellow-600/50 bg-yellow-800/20' : 'border-yellow-300 bg-yellow-50'}
+              `}>
+                <p className={`text-xs mb-1 ${isDarkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
+                  Password
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className={`font-mono font-medium ${isDarkMode ? 'text-white' : 'text-black'}`}>
+                    {roomPassword}
+                  </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(roomPassword);
+                      addNotification({ type: 'success', message: 'Password copied!' });
+                    }}
+                    className={`
+                      p-2 rounded-lg transition-colors
+                      ${isDarkMode
+                        ? 'hover:bg-white/10 text-white'
+                        : 'hover:bg-black/10 text-black'
+                      }
+                    `}
+                    title="Copy password"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Participants Count */}
+            <div className={`
+              p-3 rounded-lg
+              ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50'}
+            `}>
+              <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Participants
+              </p>
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                <span className="font-medium">{participants.length}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Messages - Scrollable area with padding for fixed header and footer */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pt-30 pb-24" style={{ height: 'calc(100vh - 8rem)', minHeight: 'calc(100vh - 8rem)' }}>

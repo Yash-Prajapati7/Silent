@@ -26,6 +26,8 @@ const CreateRoomModal = () => {
   const [roomId, setRoomId] = useState(null);
   const [password, setPassword] = useState('');
   const [hasPassword, setHasPassword] = useState(false);
+  const [creatorPassword, setCreatorPassword] = useState('');
+  const [hasCreatorPassword, setHasCreatorPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -37,6 +39,8 @@ const CreateRoomModal = () => {
     setRoomId(null);
     setPassword('');
     setHasPassword(false);
+    setCreatorPassword('');
+    setHasCreatorPassword(false);
     setError('');
     setCopied(false);
     setState(APP_STATES.HOME);
@@ -48,7 +52,8 @@ const CreateRoomModal = () => {
       setError('');
 
       const roomPassword = hasPassword ? password.trim() : null;
-      const response = await apiService.createRoom(userName, roomPassword);
+      const roomCreatorPassword = hasCreatorPassword ? creatorPassword.trim() : null;
+      const response = await apiService.createRoom(userName, roomPassword, roomCreatorPassword);
 
       if (response.success) {
         setRoomId(response.roomId);
@@ -82,7 +87,11 @@ const CreateRoomModal = () => {
   const handlePasswordSetup = (e) => {
     e.preventDefault();
     if (hasPassword && !password.trim()) {
-      setError('Password is required when enabled');
+      setError('Room password is required when enabled');
+      return;
+    }
+    if (hasCreatorPassword && !creatorPassword.trim()) {
+      setError('Creator password is required when enabled');
       return;
     }
     createRoom();
@@ -94,15 +103,25 @@ const CreateRoomModal = () => {
       setError('');
 
       const roomPassword = hasPassword ? password.trim() : null;
-      const response = await apiService.joinRoom(roomId, userName, roomPassword);
+      const roomCreatorPassword = hasCreatorPassword ? creatorPassword.trim() : null;
+      const response = await apiService.joinRoom(roomId, userName, roomPassword, roomCreatorPassword);
 
       if (response.success) {
-        setRoomData({ roomId, isCreator: true });
+        setRoomData({ 
+          roomId, 
+          isCreator: true, 
+          password: hasPassword ? password.trim() : null 
+        });
         updateParticipants(response.participants || []);
         setState(APP_STATES.CHATTING);
       }
     } catch (error) {
-      setError(error.message);
+      // Check if it's an incorrect creator password error
+      if (error.message.includes('Incorrect creator password')) {
+        setError('Incorrect creator password. Please try again.');
+      } else {
+        setError(error.message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -166,6 +185,59 @@ const CreateRoomModal = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter room password"
+              className={`
+                w-full px-4 py-3 rounded-lg border-2 transition-colors duration-200
+                ${isDarkMode
+                  ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-white focus:bg-gray-700'
+                  : 'bg-white border-gray-300 text-black placeholder-gray-500 focus:border-black focus:bg-gray-50'
+                }
+                focus:outline-none
+              `}
+              maxLength={50}
+            />
+          )}
+        </div>
+
+        {/* Creator Password Toggle */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                Creator Protection
+              </h4>
+              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Require password for you to rejoin if you leave
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setHasCreatorPassword(!hasCreatorPassword);
+                if (!hasCreatorPassword) setCreatorPassword('');
+              }}
+              className={`
+                relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                ${hasCreatorPassword
+                  ? isDarkMode ? 'bg-green-600' : 'bg-green-500'
+                  : isDarkMode ? 'bg-gray-600' : 'bg-gray-300'
+                }
+              `}
+            >
+              <span
+                className={`
+                  inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                  ${hasCreatorPassword ? 'translate-x-6' : 'translate-x-1'}
+                `}
+              />
+            </button>
+          </div>
+
+          {hasCreatorPassword && (
+            <input
+              type="password"
+              value={creatorPassword}
+              onChange={(e) => setCreatorPassword(e.target.value)}
+              placeholder="Enter creator password"
               className={`
                 w-full px-4 py-3 rounded-lg border-2 transition-colors duration-200
                 ${isDarkMode

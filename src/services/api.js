@@ -24,9 +24,9 @@ export const apiService = {
   },
 
   // Create a new room
-  createRoom: async (creator, password = null) => {
+  createRoom: async (creator, password = null, creatorPassword = null) => {
     try {
-      const response = await api.post('/create-room', { creator, password });
+      const response = await api.post('/create-room', { creator, password, creatorPassword });
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.error || 'Failed to create room');
@@ -34,9 +34,9 @@ export const apiService = {
   },
 
   // Join an existing room
-  joinRoom: async (roomId, userName, password = null) => {
+  joinRoom: async (roomId, userName, password = null, creatorPassword = null) => {
     try {
-      const response = await api.post('/join-room', { roomId, userName, password });
+      const response = await api.post('/join-room', { roomId, userName, password, creatorPassword });
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.error || 'Failed to join room');

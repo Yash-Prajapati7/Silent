@@ -9,7 +9,9 @@ export const APP_STATES = {
   CHATTING: 'chatting'
 };
 
-export const useAppStore = create((set, get) => ({
+export const useAppStore = create(
+  persist(
+    (set, get) => ({
         // State
         currentState: APP_STATES.HOME,
         roomId: null,
@@ -70,17 +72,25 @@ export const useAppStore = create((set, get) => ({
 
         setConnected: (isConnected) => set({ isConnected }),
 
-        resetState: () => set({
-          currentState: APP_STATES.HOME,
-          roomId: null,
-          userName: null,
-          isCreator: false,
-          participants: [],
-          messages: [],
-          notifications: [],
-          typingUsers: [],
-          isConnected: false
-        }),
+        resetState: () => {
+          // Clear localStorage data - Zustand persist stores under the 'name' key
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('silentchat-app-storage');
+          }
+          
+          set({
+            currentState: APP_STATES.HOME,
+            roomId: null,
+            userName: null,
+            isCreator: false,
+            roomPassword: null,
+            participants: [],
+            messages: [],
+            notifications: [],
+            typingUsers: [],
+            isConnected: false
+          });
+        },
 
         // Computed values
         get currentScreen() {
@@ -94,7 +104,18 @@ export const useAppStore = create((set, get) => ({
         get messageCount() {
           return get().messages.length;
         }
-}));
+    }),
+    {
+      name: 'silentchat-app-storage',
+      partialize: (state) => ({ 
+        roomId: state.roomId, 
+        userName: state.userName,
+        isCreator: state.isCreator,
+        roomPassword: state.roomPassword
+      })
+    }
+  )
+);
 
 // Auto-clear notifications will be handled in the component level
 

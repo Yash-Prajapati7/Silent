@@ -58,17 +58,15 @@ export const apiService = {
     try {
       const response = await api.post('/end-room', { 
         roomId, 
-        userName,
-        isCreator: true 
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Name': userName,
-          'X-Room-Id': roomId
-        }
+        userName
       });
       return response.data;
     } catch (error) {
+      console.error('API Error - End Room:', error);
+      // Log the detailed error information
+      if (error.response) {
+        console.error('Error response:', error.response.status, error.response.data);
+      }
       throw new Error(error.response?.data?.error || 'Failed to end room');
     }
   },

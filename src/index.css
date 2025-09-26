@@ -53,6 +53,24 @@ body {
   animation: fadeIn 0.3s ease-out;
 }
 
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.4s ease-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
 /* Blob animations for modern UI */
 @keyframes blob {
   0% {
@@ -79,4 +97,67 @@ body {
 
 .animation-delay-4000 {
   animation-delay: 4s;
+}
+
+.animation-delay-150 {
+  animation-delay: 150ms;
+}
+
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+
+/* Message animations */
+@keyframes messageSlideIn {
+  from { 
+    opacity: 0; 
+    transform: translateX(-30px) scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0) scale(1); 
+  }
+}
+
+.message-slide-in {
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideInRight {
+  from { 
+    opacity: 0; 
+    transform: translateX(30px) scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0) scale(1); 
+  }
+}
+
+.message-slide-in-right {
+  animation: messageSlideInRight 0.3s ease-out;
+}
+
+/* Custom scrollbar for webkit browsers */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+/* Ensure proper scrolling behavior */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
 }

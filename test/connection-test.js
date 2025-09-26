@@ -20,4 +20,4 @@ async function testFrontendBackendConnection() {
   }
 }
 
-testFrontendBackendConnection();
+setInterval(testFrontendBackendConnection, 60 * 1000);

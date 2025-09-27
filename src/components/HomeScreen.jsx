@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Users, Plus, ArrowLeft, Dice6, Loader2, Github } from 'lucide-react';
+import { Users, Plus, ArrowLeft, Dice6, Loader2, Github, HelpCircle } from 'lucide-react';
 import { useIsDarkMode } from '../stores/themeStore';
 import { useSetState, useSetUserData, APP_STATES } from '../stores/appStore';
 import { apiService } from '../services/api';
 import ThemeToggle from './ThemeToggle';
+import Modal from './Modal';
 
 const HomeScreen = () => {
   const isDarkMode = useIsDarkMode();
@@ -15,6 +16,7 @@ const HomeScreen = () => {
   const [userName, setUserName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showFAQModal, setShowFAQModal] = useState(false);
 
   const handleJoinRoom = () => {
     setNextAction('join');
@@ -98,6 +100,33 @@ const HomeScreen = () => {
             ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-900 text-white'}
           `}>
             Yash-Prajapati7
+            <div className={`absolute bottom-full right-2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent ${isDarkMode ? 'border-b-gray-800' : 'border-b-gray-900'}`}></div>
+          </div>
+        </div>
+
+        {/* FAQ Button */}
+        <div className="relative group">
+          <button
+            onClick={() => setShowFAQModal(true)}
+            className={`
+              p-3 rounded-xl transition-all duration-200 hover:scale-105
+              ${isDarkMode
+                ? 'text-white hover:bg-white/10 bg-gray-800/30 backdrop-blur-lg'
+                : 'text-black hover:bg-black/10 bg-white/30 backdrop-blur-lg'
+              }
+              shadow-lg hover:shadow-xl
+            `}
+            title="FAQs & About"
+          >
+            <HelpCircle className="w-5 h-5" />
+          </button>
+          
+          {/* Tooltip */}
+          <div className={`
+            absolute top-full right-0 mt-2 px-2 py-1 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10
+            ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-900 text-white'}
+          `}>
+            FAQs & About
             <div className={`absolute bottom-full right-2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent ${isDarkMode ? 'border-b-gray-800' : 'border-b-gray-900'}`}></div>
           </div>
         </div>
@@ -276,6 +305,39 @@ const HomeScreen = () => {
           </p>
         </div>
       </div>
+
+      {/* FAQ Modal */}
+      <Modal
+        isOpen={showFAQModal}
+        onClose={() => setShowFAQModal(false)}
+        title="FAQs & About"
+      >
+        <div className="space-y-6">
+          {/* FAQs */}
+          <div>
+            <h3 className={`text-lg font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-black'}`}>
+              Frequently Asked Questions
+            </h3>
+            <ul className={`space-y-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              <li>
+                <strong>Data Deletion:</strong> Chat and room data gets automatically deleted either when the room is ended by the creator or after 2 hours of inactivity.
+              </li>
+              <li>
+                <strong>File Uploads:</strong> Files uploaded in chats are automatically deleted after 60 minutes. Maximum file size is 100MB per file.
+              </li>
+              <li>
+                <strong>Encryption:</strong> The data is encrypted in the database.
+              </li>
+              <li>
+                <strong>Anonymity:</strong> It is completely anonymous (unless you keep a guessable username, pun intended).
+              </li>
+              <li>
+                <strong>Pricing:</strong> Free forever.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

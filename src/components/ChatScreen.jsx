@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, LogOut, X, Users, Github, Info, Copy, Smile } from 'lucide-react';
+import { Send, LogOut, X, Users, Github, Info, Copy, Smile, Paperclip, Loader2 } from 'lucide-react';
 import { useIsDarkMode } from '../stores/themeStore';
 import {
   useCurrentState,
@@ -19,10 +19,105 @@ import {
 } from '../stores/appStore';
 import { apiService } from '../services/api';
 import socketService from '../services/socket';
+import fileUploadService from '../services/fileUploadService';
 import ThemeToggle from './ThemeToggle';
 import ConfirmationModal from './ConfirmationModal';
 import EmojiPicker from 'emoji-picker-react';
 import { getUsernameColor, getContrastTextColor } from '../utils/userColors';
+
+// Simple file link component with yellow background
+const FileLink = ({ url, timestamp }) => {
+  const [isExpired, setIsExpired] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState('');
+  
+  useEffect(() => {
+    const uploadTime = new Date(timestamp).getTime();
+    const expiryTime = uploadTime + (55 * 60 * 1000); // 55 minutes
+    
+    if (Date.now() >= expiryTime) {
+      setIsExpired(true);
+      return;
+    }
+    
+    const updateTimer = () => {
+      const now = Date.now();
+      if (now >= expiryTime) {
+        setIsExpired(true);
+        return;
+      }
+      
+      const remaining = expiryTime - now;
+      const minutes = Math.floor(remaining / 60000);
+      const seconds = Math.floor((remaining % 60000) / 1000);
+      setTimeRemaining(`${minutes}m ${seconds}s`);
+    };
+    
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    const timeout = setTimeout(() => setIsExpired(true), expiryTime - Date.now());
+    
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [timestamp]);
+  
+  // Convert to download URL
+  const downloadUrl = url.includes('/dl/') ? url : url.replace(/tmpfiles\.org\/(\d+)\//, 'tmpfiles.org/dl/$1/');
+  
+  // Inline styles to override everything
+  const containerStyle = {
+    backgroundColor: '#FDFD96',
+    color: '#000000',
+    padding: '12px',
+    borderRadius: '8px',
+    margin: '8px 0',
+    border: '1px solid #d0d0d0',
+    width: '100%',
+    display: 'block'
+  };
+  
+  const linkStyle = {
+    color: '#000000',
+    fontWeight: '500',
+    textDecoration: isExpired ? 'line-through' : 'none',
+    opacity: isExpired ? '0.5' : '1',
+    cursor: isExpired ? 'not-allowed' : 'pointer',
+    wordBreak: 'break-all',
+    display: 'block'
+  };
+  
+  const timerStyle = {
+    color: '#000000',
+    fontSize: '12px',
+    marginTop: '8px',
+    opacity: '0.7'
+  };
+  
+  return (
+    <div style={containerStyle}>
+      {isExpired ? (
+        <span style={linkStyle}>
+          {downloadUrl}
+        </span>
+      ) : (
+        <a 
+          href={downloadUrl} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={linkStyle}
+          onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+          onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+        >
+          {downloadUrl}
+        </a>
+      )}
+      <div style={timerStyle}>
+        {isExpired ? 'File expired' : `Expires in: ${timeRemaining}`}
+      </div>
+    </div>
+  );
+};
 
 const ChatScreen = () => {
   const isDarkMode = useIsDarkMode();
@@ -48,6 +143,8 @@ const ChatScreen = () => {
   const [showRoomInfo, setShowRoomInfo] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [emojiPickerWidth, setEmojiPickerWidth] = useState(350);
+  const [isUploading, setIsUploading] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(Date.now()); // For resetting file input
 
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -55,6 +152,7 @@ const ChatScreen = () => {
   const emojiButtonRef = useRef(null);
   const headerRef = useRef(null); // Ref for header
   const footerRef = useRef(null); // Ref for footer
+  const fileInputRef = useRef(null); // Ref for file input
 
   const isOpen = currentState === APP_STATES.CHATTING;
 
@@ -344,6 +442,80 @@ const ChatScreen = () => {
     setShowEmojiPicker(false);
   };
 
+  // File upload handling functions
+  const handleFileClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    try {
+      setIsUploading(true);
+      
+      if (files.length === 1) {
+        // Single file upload
+        const file = files[0];
+        addNotification({ type: 'info', message: `Uploading "${file.name}"...` });
+        
+        const response = await fileUploadService.uploadFile(file);
+        
+        if (response.success && response.url) {
+          // Send the file URL as a message to the chat
+          socketService.sendMessage(roomId, response.url);
+          
+          addNotification({ 
+            type: 'success', 
+            message: `File "${file.name}" uploaded successfully` 
+          });
+        } else {
+          addNotification({ 
+            type: 'error', 
+            message: `Upload failed: ${response.message || 'Unknown error'}` 
+          });
+        }
+      } else {
+        // Multiple files upload
+        addNotification({ 
+          type: 'info', 
+          message: `Uploading ${files.length} files...`
+        });
+        
+        const response = await fileUploadService.uploadMultipleFiles(files);
+        
+        // Send each successfully uploaded file URL as a separate message
+        if (response.success) {
+          const successfulUploads = response.results.filter(result => result.success);
+          
+          for (const upload of successfulUploads) {
+            socketService.sendMessage(roomId, upload.url);
+          }
+          
+          addNotification({ 
+            type: 'success', 
+            message: `Successfully uploaded ${successfulUploads.length} of ${files.length} files` 
+          });
+        } else {
+          addNotification({ 
+            type: 'error', 
+            message: response.message || 'Failed to upload files'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('File upload error:', error);
+      addNotification({ 
+        type: 'error', 
+        message: `Upload failed: ${error.message || 'Unknown error'}` 
+      });
+    } finally {
+      setIsUploading(false);
+      // Reset file input so the same files can be uploaded again if needed
+      setFileInputKey(Date.now());
+    }
+  };
+
   const showLeaveConfirmation = () => {
     setConfirmModal({ isOpen: true, type: 'leave' });
   };
@@ -446,7 +618,6 @@ const ChatScreen = () => {
         `}
       >
         <div className="flex items-center justify-between">
-          {/* ERROR FIX: Removed the duplicate div here */}
           <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1 min-w-0">
             <div className="flex items-center gap-3 flex-shrink-0">
               <div className="flex items-center gap-2">
@@ -712,37 +883,66 @@ const ChatScreen = () => {
                   {msg.message}
                 </div>
               ) : (
-                <div className={`
-                  max-w-[85%] sm:max-w-md md:max-w-lg px-4 py-2 rounded-2xl border-2 break-words
-                  ${msg.isOwn
-                    ? isDarkMode
-                      ? 'bg-white text-black border-white'
-                      : 'bg-black text-white border-black'
-                    : isDarkMode
-                      ? 'bg-black text-white border-white'
-                      : 'bg-white text-black border-black'
-                  }
-                `}>
-                  {!msg.isOwn && (
-                    <div 
-                      className="text-xs font-bold mb-2 px-2 py-1 rounded-full inline-block w-fit border"
-                      style={{
-                        backgroundColor: getUsernameColor(msg.sender),
-                        color: getContrastTextColor(getUsernameColor(msg.sender)),
-                        borderColor: getUsernameColor(msg.sender)
-                      }}
-                    >
-                      {msg.sender}
+                /* Check if this is a file message and render differently */
+                (msg.message.includes('tmpfiles.org')) ? (
+                  /* File message - render with special styling */
+                  <div className="max-w-[85%] sm:max-w-md md:max-w-lg">
+                    {!msg.isOwn && (
+                      <div 
+                        className="text-xs font-bold mb-2 px-2 py-1 rounded-full inline-block w-fit border"
+                        style={{
+                          backgroundColor: getUsernameColor(msg.sender),
+                          color: getContrastTextColor(getUsernameColor(msg.sender)),
+                          borderColor: getUsernameColor(msg.sender)
+                        }}
+                      >
+                        {msg.sender}
+                      </div>
+                    )}
+                    <FileLink url={msg.message} timestamp={msg.timestamp} />
+                    <div className={`
+                      text-xs mt-1 opacity-70
+                      ${msg.isOwn ? 'text-right' : 'text-left'}
+                    `} style={{ color: isDarkMode ? 'white' : 'black' }}>
+                      {formatTimestamp(msg.timestamp)}
                     </div>
-                  )}
-                  <div className="text-sm whitespace-pre-wrap break-words">{msg.message}</div>
-                  <div className={`
-                    text-xs mt-1 opacity-70
-                    ${msg.isOwn ? 'text-right' : 'text-left'}
-                  `}>
-                    {formatTimestamp(msg.timestamp)}
                   </div>
-                </div>
+                ) : (
+                  /* Regular text message */
+                  <div className={`
+                    max-w-[85%] sm:max-w-md md:max-w-lg px-4 py-2 rounded-2xl border-2 break-words
+                    ${msg.isOwn
+                      ? isDarkMode
+                        ? 'bg-white text-black border-white'
+                        : 'bg-black text-white border-black'
+                      : isDarkMode
+                        ? 'bg-black text-white border-white'
+                        : 'bg-white text-black border-black'
+                    }
+                  `}>
+                    {!msg.isOwn && (
+                      <div 
+                        className="text-xs font-bold mb-2 px-2 py-1 rounded-full inline-block w-fit border"
+                        style={{
+                          backgroundColor: getUsernameColor(msg.sender),
+                          color: getContrastTextColor(getUsernameColor(msg.sender)),
+                          borderColor: getUsernameColor(msg.sender)
+                        }}
+                      >
+                        {msg.sender}
+                      </div>
+                    )}
+                    <div className="text-sm whitespace-pre-wrap break-words">
+                      {msg.message}
+                    </div>
+                    <div className={`
+                      text-xs mt-1 opacity-70
+                      ${msg.isOwn ? 'text-right' : 'text-left'}
+                    `}>
+                      {formatTimestamp(msg.timestamp)}
+                    </div>
+                  </div>
+                )
               )}
             </div>
           ))}
@@ -808,6 +1008,38 @@ const ChatScreen = () => {
             maxLength={1000}
           />
 
+          {/* File Upload Button */}
+          <div className="relative">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+              className="hidden" 
+              key={fileInputKey}
+              multiple  // Allow multiple file selection
+            />
+            <button
+              type="button"
+              onClick={handleFileClick}
+              disabled={isUploading}
+              className={`
+                px-2 sm:px-3 md:px-4 py-2 sm:py-3 rounded-2xl transition-all duration-300 flex items-center gap-2 font-medium border-2
+                ${isDarkMode
+                  ? 'bg-black border-white text-white hover:bg-white/10'
+                  : 'bg-white border-black text-black hover:bg-black/10'
+                }
+                ${isUploading ? 'opacity-70 cursor-not-allowed' : ''}
+              `}
+              title="Upload file"
+            >
+              {isUploading ? (
+                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+              ) : (
+                <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
+              )}
+            </button>
+          </div>
+
           {/* Emoji Button */}
           <div className="relative">
             <button
@@ -849,10 +1081,10 @@ const ChatScreen = () => {
 
           <button
             type="submit"
-            disabled={!message.trim()}
+            disabled={!message.trim() || isUploading}
             className={`
               px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 flex items-center gap-2 font-medium border-2
-              ${message.trim()
+              ${message.trim() && !isUploading
                 ? isDarkMode
                   ? 'bg-white text-black border-white hover:bg-black hover:text-white transform hover:scale-105'
                   : 'bg-black text-white border-black hover:bg-white hover:text-black transform hover:scale-105'

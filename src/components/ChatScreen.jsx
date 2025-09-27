@@ -162,10 +162,12 @@ const ChatScreen = () => {
   // Compute emoji picker width and chat area height
   useEffect(() => {
     const computeLayout = () => {
-      // Emoji width
+      // Responsive emoji picker width
       const w = window.innerWidth;
-      if (w < 380) setEmojiPickerWidth(260);
-      else if (w < 500) setEmojiPickerWidth(300);
+      if (w < 320) setEmojiPickerWidth(240);
+      else if (w < 380) setEmojiPickerWidth(260);
+      else if (w < 480) setEmojiPickerWidth(280);
+      else if (w < 600) setEmojiPickerWidth(320);
       else setEmojiPickerWidth(350);
 
       // Chat area height calculation
@@ -606,189 +608,156 @@ const ChatScreen = () => {
         : 'bg-white text-black'
       }
     `}>
-      {/* Header - Fixed */}
+      {/* Header - Fixed with responsive layout */}
       <div 
-        ref={headerRef} // Add ref to calculate height
+        ref={headerRef}
         className={`
-          flex-shrink-0 p-3 sm:p-4 md:p-6 border-b z-30
+          flex-shrink-0 p-3 sm:p-4 border-b z-30
           ${isDarkMode
             ? 'border-white/20 bg-black'
             : 'border-black/20 bg-white'
           }
         `}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1 min-w-0">
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <div className={`
-                  w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border-2 text-lg sm:text-2xl
+        <div className="flex items-center justify-between gap-2">
+          {/* Left Side: Icon and Room Info */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`
+              w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border-2 text-2xl flex-shrink-0
+              ${isDarkMode
+                ? 'bg-white text-black border-white'
+                : 'bg-black text-white border-black'
+              }
+            `}>
+              🤫
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-bold text-base sm:text-lg truncate">Room {roomId}</h1>
+              {isCreator && (
+                <span className={`
+                  px-2 py-0.5 text-xs rounded-full font-medium border inline-block mt-0.5
                   ${isDarkMode
                     ? 'bg-white text-black border-white'
                     : 'bg-black text-white border-black'
                   }
                 `}>
-                  🤫
-                </div>
-
-                {/* Room Info Button */}
-                <button
-                  onClick={() => setShowRoomInfo(!showRoomInfo)}
-                  className={`
-                    p-2 rounded-lg transition-all duration-200 hover:scale-105 relative
-                    ${isDarkMode
-                      ? 'text-white hover:bg-white/10'
-                      : 'text-black hover:bg-black/10'
-                    }
-                  `}
-                  title="Room Information"
-                >
-                  <Info className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="min-w-0">
-                <h1 className="font-bold text-base sm:text-lg truncate">Room {roomId}</h1>
-                {isCreator && (
-                  <span className={`
-                    px-3 py-1 text-xs sm:text-sm rounded-full font-medium border inline-block mt-1
-                    ${isDarkMode
-                      ? 'bg-white text-black border-white'
-                      : 'bg-black text-white border-black'
-                    }
-                  `}>
-                    Creator
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className={`
-              flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-2 rounded-lg border flex-shrink-0 ml-2
-              ${isDarkMode ? 'bg-black border-white/20' : 'bg-white border-black/20'}
-            `}>
-              <Users className="w-4 h-4" />
-              <span className="font-medium">{participants.length}</span>
-              <span className="text-sm opacity-75 hidden sm:inline">online</span>
+                  Creator
+                </span>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+
+          {/* Right Side: Action Buttons */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            {/* Participants Count Badge */}
+            <div className={`
+              flex items-center gap-2 px-3 py-2 rounded-lg border
+              ${isDarkMode ? 'bg-black border-white/20' : 'bg-white border-black/20'}
+            `}>
+              <Users className="w-5 h-5" />
+              <span className="font-medium text-sm">{participants.length}</span>
+            </div>
+
+            {/* Room Info Button */}
+            <button
+              onClick={() => setShowRoomInfo(true)}
+              className={`
+                p-2 rounded-lg transition-colors
+                ${isDarkMode
+                  ? 'text-white hover:bg-white/10'
+                  : 'text-black hover:bg-black/10'
+                }
+              `}
+              title="Room Information"
+            >
+              <Info className="w-5 h-5" />
+            </button>
+
+            {/* End or Leave Button */}
             {isCreator ? (
               <button
                 onClick={showEndRoomConfirmation}
                 disabled={isLoading}
                 className={`
-                  px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 border-2 text-xs sm:text-sm md:text-base
+                  flex items-center gap-1 px-2 py-2 sm:px-3 rounded-lg transition-colors bg-red-500
                   ${isDarkMode
-                    ? 'bg-white text-black border-white hover:bg-black hover:text-white'
-                    : 'bg-black text-white border-black hover:bg-white hover:text-black'
+                    ? 'text-white hover:bg-red-600'
+                    : 'text-black hover:bg-red-600'
                   }
                   disabled:opacity-50 disabled:cursor-not-allowed
                 `}
+                title="End Room"
               >
-                <X className="w-4 h-4" />
-                <span className="hidden sm:inline">End Room</span>
-                <span className="sm:hidden">End</span>
+                <X className="w-5 h-5" />
+                <span className="hidden sm:inline text-sm font-medium">End Room</span>
               </button>
             ) : (
               <button
                 onClick={showLeaveConfirmation}
                 disabled={isLoading}
                 className={`
-                  px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 border-2 text-xs sm:text-sm md:text-base
+                  flex items-center gap-1 px-2 py-2 sm:px-3 rounded-lg transition-colors bg-red-500
                   ${isDarkMode
-                    ? 'bg-white text-black border-white hover:bg-black hover:text-white'
-                    : 'bg-black text-white border-black hover:bg-white hover:text-black'
+                    ? 'text-white hover:bg-red-600'
+                    : 'text-black hover:bg-red-600'
                   }
                   disabled:opacity-50 disabled:cursor-not-allowed
                 `}
+                title="Leave Room"
               >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Leave</span>
+                <LogOut className="w-5 h-5" />
+                <span className="hidden sm:inline text-sm font-medium">Leave Room</span>
               </button>
             )}
-
-            {/* GitHub Button */}
-            <div className="relative group">
-              <button
-                onClick={() => window.open('https://github.com/Yash-Prajapati7', '_blank')}
-                className={`
-                  p-2 rounded-lg transition-all duration-200 hover:scale-105
-                  ${isDarkMode
-                    ? 'text-white hover:bg-white/10'
-                    : 'text-black hover:bg-black/10'
-                  }
-                `}
-                title="Visit GitHub Profile"
-              >
-                <Github className="w-5 h-5" />
-              </button>
-
-              {/* Tooltip */}
-              <div className={`
-                absolute top-full right-0 mt-2 px-2 py-1 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10
-                ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-900 text-white'}
-              `}>
-                Yash-Prajapati7
-                <div className={`absolute bottom-full right-2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent ${isDarkMode ? 'border-b-gray-800' : 'border-b-gray-900'}`}></div>
-              </div>
-            </div>
-            {/* Theme Toggle on the extreme right */}
-            <ThemeToggle inline={true} />
           </div>
         </div>
       </div>
 
       {/* Messages - Scrollable area and Room Info Modal Container */}
       <div className="relative flex-1 overflow-hidden">
+        {/* Room Info Panel - Responsive */}
         {showRoomInfo && (
+          <>
+          {/* Backdrop for mobile */}
+          <div 
+            onClick={() => setShowRoomInfo(false)}
+            className={`
+              fixed inset-0 bg-black/60 z-40 sm:hidden
+              transition-opacity duration-300
+              ${showRoomInfo ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+            `}
+          />
           <div className={`
-            absolute top-0 right-4 md:w-80 z-20 p-4 rounded-lg shadow-xl border backdrop-blur-lg
+            fixed top-0 right-0 bottom-0 w-full max-w-sm sm:max-w-none sm:w-80 sm:top-4 sm:bottom-auto sm:right-4 z-50 p-4 rounded-t-2xl sm:rounded-lg shadow-2xl border backdrop-blur-xl
+            transition-transform duration-300 ease-in-out
+            ${showRoomInfo ? 'translate-y-0' : 'translate-y-full sm:translate-y-0'}
             ${isDarkMode
-              ? 'bg-gray-900/95 border-gray-700 text-white'
-              : 'bg-white/95 border-gray-300 text-black'
+              ? 'bg-gray-900/90 border-gray-700 text-white'
+              : 'bg-white/90 border-gray-300 text-black'
             }
-            max-h-[70vh] overflow-y-auto w-[calc(100%-2rem)] md:w-80
           `}>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between mb-4">
+            <div className="space-y-4 max-h-full overflow-y-auto">
+              <div className="flex items-center justify-between pb-2 border-b" style={{borderColor: isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}}>
                 <h3 className="font-bold text-lg">Room Details</h3>
                 <button
                   onClick={() => setShowRoomInfo(false)}
-                  className={`
-                    p-1 rounded-lg transition-colors
-                    ${isDarkMode
-                      ? 'hover:bg-white/10'
-                      : 'hover:bg-black/10'
-                    }
-                  `}
+                  className={`p-1 rounded-full ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/10'}`}
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Room ID */}
-              <div className={`
-                p-3 rounded-lg border-2 border-dashed
-                ${isDarkMode ? 'border-gray-600 bg-gray-800/50' : 'border-gray-300 bg-gray-50'}
-              `}>
-                <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Room ID
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className={`text-2xl font-mono font-bold truncate ${isDarkMode ? 'text-white' : 'text-black'}`}>
-                    {roomId}
-                  </span>
+              <div className={`p-3 rounded-lg border-2 border-dashed ${isDarkMode ? 'border-gray-600 bg-gray-800/50' : 'border-gray-300 bg-gray-50'}`}>
+                <p className={`text-xs mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Room ID</p>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xl font-mono font-bold truncate">{roomId}</span>
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(roomId.toString());
                       addNotification({ type: 'success', message: 'Room ID copied!' });
                     }}
-                    className={`
-                      p-2 rounded-lg transition-colors
-                      ${isDarkMode
-                        ? 'hover:bg-white/10 text-white'
-                        : 'hover:bg-black/10 text-black'
-                      }
-                    `}
+                    className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/10'}`}
                     title="Copy room ID"
                   >
                     <Copy className="w-4 h-4" />
@@ -796,31 +765,18 @@ const ChatScreen = () => {
                 </div>
               </div>
 
-              {/* Room Password (if exists) */}
+              {/* Room Password */}
               {roomPassword && (
-                <div className={`
-                  p-3 rounded-lg border-2 border-dashed
-                  ${isDarkMode ? 'border-yellow-600/50 bg-yellow-800/20' : 'border-yellow-300 bg-yellow-50'}
-                `}>
-                  <p className={`text-xs mb-1 ${isDarkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
-                    Password
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className={`font-mono font-medium truncate ${isDarkMode ? 'text-white' : 'text-black'}`}>
-                      {roomPassword}
-                    </span>
+                <div className={`p-3 rounded-lg border-2 border-dashed ${isDarkMode ? 'border-yellow-600/50 bg-yellow-800/20' : 'border-yellow-300 bg-yellow-50'}`}>
+                  <p className={`text-xs mb-1 ${isDarkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>Password</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono font-medium truncate">{roomPassword}</span>
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(roomPassword);
                         addNotification({ type: 'success', message: 'Password copied!' });
                       }}
-                      className={`
-                        p-2 rounded-lg transition-colors
-                        ${isDarkMode
-                          ? 'hover:bg-white/10 text-white'
-                          : 'hover:bg-black/10 text-black'
-                        }
-                      `}
+                      className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/10'}`}
                       title="Copy password"
                     >
                       <Copy className="w-4 h-4" />
@@ -830,38 +786,51 @@ const ChatScreen = () => {
               )}
 
               {/* Participants List */}
-              <div className={`
-                p-3 rounded-lg
-                ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50'}
-              `}>
-                <p className={`text-xs mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Participants ({participants.length})
-                </p>
+              <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
+                <p className={`text-xs mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Participants ({participants.length})</p>
                 <div className="flex flex-wrap gap-2">
-                  {participants.map((participant) => (
+                  {participants.map((p) => (
                     <div
-                      key={participant}
-                      className="px-3 py-1 rounded-full text-xs font-medium border inline-block"
+                      key={p}
+                      className="px-3 py-1 rounded-full text-xs font-medium border"
                       style={{
-                        backgroundColor: getUsernameColor(participant),
-                        color: getContrastTextColor(getUsernameColor(participant)),
-                        borderColor: getUsernameColor(participant)
+                        backgroundColor: getUsernameColor(p),
+                        color: getContrastTextColor(getUsernameColor(p)),
+                        borderColor: getUsernameColor(p)
                       }}
                     >
-                      {participant}
+                      {p}
                     </div>
                   ))}
                 </div>
               </div>
+              
+              {/* Other Actions Section */}
+              <div className="pt-4 border-t" style={{borderColor: isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}}>
+                <div className="space-y-2">
+                   <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Theme</span>
+                      <ThemeToggle inline={true} />
+                   </div>
+                   <button
+                    onClick={() => window.open('https://github.com/Yash-Prajapati7', '_blank')}
+                    className={`w-full flex items-center justify-between p-2 rounded-lg text-sm font-medium ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/10'}`}
+                  >
+                    <span>Visit on GitHub</span>
+                    <Github className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
+          </>
         )}
 
         {/* Chat Messages */}
         <div
-          className="overflow-y-auto p-3 sm:p-4 space-y-4 custom-scrollbar"
+          className="overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-4 custom-scrollbar"
           style={{
-            height: chatAreaHeight, // Use dynamic height
+            height: chatAreaHeight,
             WebkitOverflowScrolling: 'touch'
           }}
         >
@@ -873,7 +842,7 @@ const ChatScreen = () => {
               {msg.isSystem ? (
                 // System messages (join/leave notifications)
                 <div className={`
-                  text-center py-2 px-4 rounded-lg text-sm font-medium max-w-[90%]
+                  text-center py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium max-w-[95%] sm:max-w-[90%]
                   border-2 border-dashed
                   ${isDarkMode 
                     ? 'text-blue-300 bg-blue-900/20 border-blue-500/50' 
@@ -886,7 +855,7 @@ const ChatScreen = () => {
                 /* Check if this is a file message and render differently */
                 (msg.message.includes('tmpfiles.org')) ? (
                   /* File message - render with special styling */
-                  <div className="max-w-[85%] sm:max-w-md md:max-w-lg">
+                  <div className="max-w-[95%] sm:max-w-[85%] md:max-w-lg">
                     {!msg.isOwn && (
                       <div 
                         className="text-xs font-bold mb-2 px-2 py-1 rounded-full inline-block w-fit border"
@@ -910,7 +879,7 @@ const ChatScreen = () => {
                 ) : (
                   /* Regular text message */
                   <div className={`
-                    max-w-[85%] sm:max-w-md md:max-w-lg px-4 py-2 rounded-2xl border-2 break-words
+                    max-w-[90%] sm:max-w-[85%] md:max-w-lg px-3 sm:px-4 py-2 sm:py-2 rounded-2xl border-2 break-words
                     ${msg.isOwn
                       ? isDarkMode
                         ? 'bg-white text-black border-white'
@@ -947,9 +916,9 @@ const ChatScreen = () => {
             </div>
           ))}
 
-          {/* Typing indicator */}
+          {/* Typing indicator with improved mobile display */}
           {localTypingUsers.length > 0 && (
-            <div className={`text-sm flex items-center gap-1 flex-wrap ${isDarkMode ? 'text-white/70' : 'text-black/70'}`}>
+            <div className={`text-xs sm:text-sm flex items-center gap-1 flex-wrap px-2 ${isDarkMode ? 'text-white/70' : 'text-black/70'}`}>
               {localTypingUsers.map((user, index) => (
                 <span key={user}>
                   <span 
@@ -975,19 +944,18 @@ const ChatScreen = () => {
         </div>
       </div>
 
-
-      {/* Message Input - Fixed */}
+      {/* Message Input */}
       <div 
-        ref={footerRef} // Add ref to calculate height
+        ref={footerRef}
         className={`
-          flex-shrink-0 p-3 sm:p-4 md:p-6 border-t z-30
+          flex-shrink-0 p-2 sm:p-4 border-t z-30
           ${isDarkMode
             ? 'border-white/20 bg-black'
             : 'border-black/20 bg-white'
           }
         `}
       >
-        <form onSubmit={handleSendMessage} className="flex gap-2 sm:gap-3 max-w-4xl mx-auto items-center">
+        <form onSubmit={handleSendMessage} className="flex gap-2 sm:gap-3 max-w-4xl mx-auto items-end">
           <input
             type="text"
             value={message}
@@ -998,7 +966,7 @@ const ChatScreen = () => {
             onBlur={handleStopTyping}
             placeholder="Type a message..."
             className={`
-              flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl border-2 text-sm sm:text-base
+              flex-1 px-4 py-2 sm:py-3 rounded-2xl border-2 text-sm sm:text-base min-h-[44px] sm:min-h-[48px]
               focus:outline-none transition-all duration-300
               ${isDarkMode
                 ? 'bg-black border-white text-white placeholder-white/50 focus:border-white/70'
@@ -1008,94 +976,95 @@ const ChatScreen = () => {
             maxLength={1000}
           />
 
-          {/* File Upload Button */}
-          <div className="relative">
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              className="hidden" 
-              key={fileInputKey}
-              multiple  // Allow multiple file selection
-            />
-            <button
-              type="button"
-              onClick={handleFileClick}
-              disabled={isUploading}
-              className={`
-                px-2 sm:px-3 md:px-4 py-2 sm:py-3 rounded-2xl transition-all duration-300 flex items-center gap-2 font-medium border-2
-                ${isDarkMode
-                  ? 'bg-black border-white text-white hover:bg-white/10'
-                  : 'bg-white border-black text-black hover:bg-black/10'
-                }
-                ${isUploading ? 'opacity-70 cursor-not-allowed' : ''}
-              `}
-              title="Upload file"
-            >
-              {isUploading ? (
-                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-              ) : (
-                <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
-              )}
-            </button>
-          </div>
-
-          {/* Emoji Button */}
-          <div className="relative">
-            <button
-              ref={emojiButtonRef}
-              type="button"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className={`
-                px-2 sm:px-3 md:px-4 py-2 sm:py-3 rounded-2xl transition-all duration-300 flex items-center gap-2 font-medium border-2
-                ${isDarkMode
-                  ? 'bg-black border-white text-white hover:bg-white/10'
-                  : 'bg-white border-black text-black hover:bg-black/10'
-                }
-              `}
-              title="Add emoji"
-            >
-              <Smile className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-
-            {/* Emoji Picker */}
-            {showEmojiPicker && (
-              <div
-                ref={emojiPickerRef}
-                className="absolute bottom-full right-0 mb-2 z-50"
+          {/* Action Buttons Container */}
+          <div className='flex items-center gap-2'>
+            {/* File Upload Button */}
+            <div className="relative">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                className="hidden" 
+                key={fileInputKey}
+                multiple
+              />
+              <button
+                type="button"
+                onClick={handleFileClick}
+                disabled={isUploading}
+                className={`
+                  p-2.5 sm:p-3 rounded-full transition-all duration-300 flex items-center justify-center border-2 min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px]
+                  ${isDarkMode
+                    ? 'bg-black border-white text-white hover:bg-white/10'
+                    : 'bg-white border-black text-black hover:bg-black/10'
+                  }
+                  ${isUploading ? 'opacity-70 cursor-not-allowed' : ''}
+                `}
+                title="Upload file"
               >
-                <EmojiPicker
-                  onEmojiClick={handleEmojiClick}
-                  theme={isDarkMode ? 'dark' : 'light'}
-                  height={400}
-                  width={emojiPickerWidth}
-                  previewConfig={{
-                    showPreview: false
-                  }}
-                  skinTonesDisabled={false}
-                  searchDisabled={false}
-                />
-              </div>
-            )}
-          </div>
+                {isUploading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Paperclip className="w-5 h-5" />
+                )}
+              </button>
+            </div>
 
-          <button
-            type="submit"
-            disabled={!message.trim() || isUploading}
-            className={`
-              px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 flex items-center gap-2 font-medium border-2
-              ${message.trim() && !isUploading
-                ? isDarkMode
-                  ? 'bg-white text-black border-white hover:bg-black hover:text-white transform hover:scale-105'
-                  : 'bg-black text-white border-black hover:bg-white hover:text-black transform hover:scale-105'
-                : isDarkMode
-                  ? 'bg-black text-white/30 border-white/30 cursor-not-allowed'
-                  : 'bg-white text-black/30 border-black/30 cursor-not-allowed'
-              }
-            `}
-          >
-            <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
+            {/* Emoji Button */}
+            <div className="relative">
+              <button
+                ref={emojiButtonRef}
+                type="button"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className={`
+                  p-2.5 sm:p-3 rounded-full transition-all duration-300 flex items-center justify-center border-2 min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px]
+                  ${isDarkMode
+                    ? 'bg-black border-white text-white hover:bg-white/10'
+                    : 'bg-white border-black text-black hover:bg-black/10'
+                  }
+                `}
+                title="Add emoji"
+              >
+                <Smile className="w-5 h-5" />
+              </button>
+
+              {/* Emoji Picker */}
+              {showEmojiPicker && (
+                <div
+                  ref={emojiPickerRef}
+                  className="absolute bottom-full right-0 mb-2 z-50"
+                >
+                  <EmojiPicker
+                    onEmojiClick={handleEmojiClick}
+                    theme={isDarkMode ? 'dark' : 'light'}
+                    height={350}
+                    width={emojiPickerWidth}
+                    previewConfig={{ showPreview: false }}
+                    skinTonesDisabled={false}
+                    searchDisabled={false}
+                  />
+                </div>
+              )}
+            </div>
+            
+            <button
+              type="submit"
+              disabled={!message.trim() || isUploading}
+              className={`
+                p-2.5 sm:p-3 rounded-full transition-all duration-300 flex items-center justify-center border-2 min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px]
+                ${message.trim() && !isUploading
+                  ? isDarkMode
+                    ? 'bg-white text-black border-white hover:bg-black hover:text-white transform hover:scale-105'
+                    : 'bg-black text-white border-black hover:bg-white hover:text-black transform hover:scale-105'
+                  : isDarkMode
+                    ? 'bg-black text-white/30 border-white/30 cursor-not-allowed'
+                    : 'bg-white text-black/30 border-black/30 cursor-not-allowed'
+                }
+              `}
+            >
+              <Send className="w-5 h-5" />
+            </button>
+          </div>
         </form>
       </div>
 

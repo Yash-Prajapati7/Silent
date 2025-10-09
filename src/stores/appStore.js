@@ -38,10 +38,34 @@ export const useAppStore = create(
         }),
 
         addMessage: (message) => set((state) => ({
-          messages: [...state.messages, message]
+          messages: [...state.messages, {
+            ...message,
+            id: message.id || `${Date.now()}-${Math.random()}`, // Ensure each message has a unique ID
+            reactions: message.reactions || {}
+          }]
         })),
 
-        setMessages: (messages) => set({ messages }),
+        setMessages: (messages) => set({ 
+          messages: messages.map(msg => ({
+            ...msg,
+            id: msg.id || `${Date.now()}-${Math.random()}`,
+            reactions: msg.reactions || {}
+          }))
+        }),
+
+        addReactionToMessage: (messageId, userName, emoji) => set((state) => ({
+          messages: state.messages.map(msg =>
+            msg.id === messageId
+              ? {
+                  ...msg,
+                  reactions: {
+                    ...msg.reactions,
+                    [emoji]: [...(msg.reactions[emoji] || []), userName]
+                  }
+                }
+              : msg
+          )
+        })),
 
         updateParticipants: (participants) => set({ participants }),
 
@@ -137,6 +161,7 @@ export const useSetRoomData = () => useAppStore((state) => state.setRoomData);
 export const useSetUserData = () => useAppStore((state) => state.setUserData);
 export const useAddMessage = () => useAppStore((state) => state.addMessage);
 export const useSetMessages = () => useAppStore((state) => state.setMessages);
+export const useAddReactionToMessage = () => useAppStore((state) => state.addReactionToMessage);
 export const useUpdateParticipants = () => useAppStore((state) => state.updateParticipants);
 export const useAddNotification = () => useAppStore((state) => state.addNotification);
 export const useRemoveNotification = () => useAppStore((state) => state.removeNotification);

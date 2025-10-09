@@ -5,7 +5,8 @@ import { useIsDarkMode } from '../stores/themeStore';
 import { 
   useCurrentState, 
   useSetState, 
-  useSetRoomData, 
+  useSetRoomData,
+  useSetUserData,
   useUserName,
   useUpdateParticipants, 
   useAddNotification, 
@@ -18,13 +19,15 @@ const JoinRoomModal = () => {
   const currentState = useCurrentState();
   const setState = useSetState();
   const setRoomData = useSetRoomData();
+  const setUserData = useSetUserData();
   const userName = useUserName(); // Get username from store
   const updateParticipants = useUpdateParticipants();
   const addNotification = useAddNotification();
-  const [step, setStep] = useState(1); // 1: Room ID, 2: Password (if needed)
+  const [step, setStep] = useState(1); // 1: Room ID, 2: Password (if needed), 3: Username
   const [roomId, setRoomId] = useState('');
   const [password, setPassword] = useState('');
   const [creatorPassword, setCreatorPassword] = useState('');
+  const [localUserName, setLocalUserName] = useState('');
   const [requiresPassword, setRequiresPassword] = useState(false);
   const [requiresCreatorPassword, setRequiresCreatorPassword] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
@@ -38,6 +41,7 @@ const JoinRoomModal = () => {
     setRoomId('');
     setPassword('');
     setCreatorPassword('');
+    setLocalUserName('');
     setRequiresPassword(false);
     setRequiresCreatorPassword(false);
     setIsCreator(false);
@@ -64,8 +68,8 @@ const JoinRoomModal = () => {
           setRequiresPassword(true);
           setStep(2);
         } else {
-          // Room doesn't need password, join directly
-          joinRoom();
+          // Room doesn't need password, go to username step
+          setStep(3);
         }
       }
     } catch (error) {
@@ -75,16 +79,25 @@ const JoinRoomModal = () => {
     }
   };
 
-  const joinRoom = async (roomPassword = null) => {
+  const joinRoom = async (roomPassword = null, userNameToJoin = null) => {
     try {
       setIsLoading(true);
       setError('');
 
+      const finalUserName = userNameToJoin || localUserName;
       const roomCreatorPassword = isCreator && requiresCreatorPassword ? creatorPassword.trim() : null;
-      const response = await apiService.joinRoom(parseInt(roomId), userName, roomPassword, roomCreatorPassword);
+      const response = await apiService.joinRoom(parseInt(roomId), finalUserName, roomPassword, roomCreatorPassword);
       
       if (response.success) {
-        setRoomData({ roomId: parseInt(roomId), isCreator: response.isCreator || false });
+        // Store username in global state
+        setUserData({ userName: finalUserName });
+        
+        // Use the isCreator flag from the backend response
+        setRoomData({ 
+          roomId: parseInt(roomId), 
+          isCreator: response.isCreator || false,
+          password: requiresPassword ? roomPassword : null 
+        });
         updateParticipants(response.participants || []);
         setState(APP_STATES.CHATTING);
       }
@@ -121,14 +134,15 @@ const JoinRoomModal = () => {
       return;
     }
 
-    await joinRoom(requiresPassword ? password.trim() : null);
+    // After password validation, go to username step
+    setStep(3);
   };
 
   const renderStep1 = () => (
     <form onSubmit={handleRoomIdSubmit}>
       <div className="space-y-4">
         <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-          Enter the 4-digit room ID to join as <span className="font-medium">{userName}</span>
+          Enter the 4-digit room ID to join
         </p>
         
         <input
@@ -303,6 +317,87 @@ const JoinRoomModal = () => {
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
+                Checking...
+              </>
+            ) : (
+              'Continue'
+            )}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+
+  const renderStep3 = () => (
+    <form onSubmit={async (e) => {
+      e.preventDefault();
+      if (!localUserName.trim()) {
+        setError('Username is required');
+        return;
+      }
+      await joinRoom(requiresPassword ? password.trim() : null, localUserName.trim());
+    }}>
+      <div className="space-y-4">
+        <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+          Choose a username to join room <span className="font-mono font-bold">{roomId}</span>
+        </p>
+        
+        <input
+          type="text"
+          value={localUserName}
+          onChange={(e) => {
+            setLocalUserName(e.target.value);
+            setError('');
+          }}
+          placeholder="Enter your username"
+          className={`
+            w-full px-4 py-3 rounded-lg border-2 transition-colors duration-200
+            ${isDarkMode
+              ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-white focus:bg-gray-700'
+              : 'bg-white border-gray-300 text-black placeholder-gray-500 focus:border-black focus:bg-gray-50'
+            }
+            focus:outline-none
+          `}
+          maxLength={20}
+          autoComplete="off"
+        />
+        
+        {error && (
+          <p className="text-red-500 text-sm text-center">{error}</p>
+        )}
+        
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => setStep(requiresPassword ? 2 : 1)}
+            className={`
+              px-4 py-3 rounded-lg font-medium transition-colors flex items-center gap-2
+              ${isDarkMode
+                ? 'text-white hover:bg-white/10'
+                : 'text-black hover:bg-black/10'
+              }
+            `}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+          
+          <button
+            type="submit"
+            disabled={!localUserName.trim() || isLoading}
+            className={`
+              flex-1 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2
+              ${localUserName.trim() && !isLoading
+                ? isDarkMode
+                  ? 'bg-white text-black hover:bg-gray-100'
+                  : 'bg-black text-white hover:bg-gray-900'
+                : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+              }
+            `}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
                 Joining...
               </>
             ) : (
@@ -318,10 +413,14 @@ const JoinRoomModal = () => {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={step === 1 ? "Join Room" : requiresCreatorPassword ? "Creator Password" : "Room Password"}
+      title={
+        step === 1 ? "Join Room" : 
+        step === 2 ? (requiresCreatorPassword ? "Creator Password" : "Room Password") :
+        "Enter Username"
+      }
       showCloseButton={!isLoading}
     >
-      {step === 1 ? renderStep1() : renderStep2()}
+      {step === 1 ? renderStep1() : step === 2 ? renderStep2() : renderStep3()}
     </Modal>
   );
 };

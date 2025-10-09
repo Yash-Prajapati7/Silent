@@ -19,11 +19,12 @@ const HomeScreen = () => {
   const [showFAQModal, setShowFAQModal] = useState(false);
 
   const handleJoinRoom = () => {
-    setNextAction('join');
-    setShowUsernameInput(true);
+    // For joining, go directly to the JOIN modal (which will ask for room ID/password first)
+    setState(APP_STATES.JOINING);
   };
 
   const handleCreateRoom = () => {
+    // For creating, ask for username first
     setNextAction('create');
     setShowUsernameInput(true);
   };

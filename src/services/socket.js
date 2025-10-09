@@ -62,9 +62,16 @@ class SocketService {
   }
 
   // Send a message
-  sendMessage(roomId, message) {
+  sendMessage(roomId, message, replyTo = null) {
     if (this.socket) {
-      this.socket.emit('sendMessage', { roomId, message });
+      this.socket.emit('sendMessage', { roomId, message, replyTo });
+    }
+  }
+
+  // React to a message
+  reactToMessage(roomId, messageId, emoji) {
+    if (this.socket) {
+      this.socket.emit('reactToMessage', { roomId, messageId, emoji });
     }
   }
 
@@ -127,6 +134,12 @@ class SocketService {
   onError(callback) {
     if (this.socket) {
       this.socket.on('error', callback);
+    }
+  }
+
+  onMessageReaction(callback) {
+    if (this.socket) {
+      this.socket.on('messageReaction', callback);
     }
   }
 

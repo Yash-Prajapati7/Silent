@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, LogOut, X, Users, Github, Info, Copy, Smile, Paperclip, Loader2 } from 'lucide-react';
+import { Send, LogOut, X, Users, Github, Info, Copy, Smile, Paperclip, Loader2, ArrowDown, Reply, Heart } from 'lucide-react';
 import { useIsDarkMode } from '../stores/themeStore';
 import {
   useCurrentState,
@@ -14,6 +14,7 @@ import {
   useSetMessages,
   useUpdateParticipants,
   useAddNotification,
+  useAddReactionToMessage,
   useResetState,
   APP_STATES
 } from '../stores/appStore';
@@ -62,8 +63,10 @@ const FileLink = ({ url, timestamp }) => {
     };
   }, [timestamp]);
   
-  // Convert to download URL
-  const downloadUrl = url.includes('/dl/') ? url : url.replace(/tmpfiles\.org\/(\d+)\//, 'tmpfiles.org/dl/$1/');
+  // Convert to download URL and ensure it starts with https
+  const downloadUrl = url.includes('/dl/') 
+    ? url.replace(/^http:/, 'https:') 
+    : url.replace(/tmpfiles\.org\/(\d+)\//, 'tmpfiles.org/dl/$1/').replace(/^http:/, 'https:');
   
   // Inline styles to override everything
   const containerStyle = {
@@ -133,6 +136,7 @@ const ChatScreen = () => {
   const setMessages = useSetMessages();
   const updateParticipants = useUpdateParticipants();
   const addNotification = useAddNotification();
+  const addReactionToMessage = useAddReactionToMessage();
   const resetState = useResetState();
 
   const [message, setMessage] = useState('');
@@ -145,6 +149,11 @@ const ChatScreen = () => {
   const [emojiPickerWidth, setEmojiPickerWidth] = useState(350);
   const [isUploading, setIsUploading] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(Date.now()); // For resetting file input
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [selectedMessageId, setSelectedMessageId] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [showReactionPicker, setShowReactionPicker] = useState(null); // Store message ID for reaction picker
 
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -153,13 +162,14 @@ const ChatScreen = () => {
   const headerRef = useRef(null); // Ref for header
   const footerRef = useRef(null); // Ref for footer
   const fileInputRef = useRef(null); // Ref for file input
+  const messagesContainerRef = useRef(null); // Ref for messages container
 
   const isOpen = currentState === APP_STATES.CHATTING;
 
   // State to hold the dynamic height for the chat area
   const [chatAreaHeight, setChatAreaHeight] = useState('calc(100vh - 8rem)');
 
-  // Compute emoji picker width and chat area height
+  // Compute emoji picker width
   useEffect(() => {
     const computeLayout = () => {
       // Responsive emoji picker width
@@ -169,13 +179,6 @@ const ChatScreen = () => {
       else if (w < 480) setEmojiPickerWidth(280);
       else if (w < 600) setEmojiPickerWidth(320);
       else setEmojiPickerWidth(350);
-
-      // Chat area height calculation
-      const headerHeight = headerRef.current?.offsetHeight || 0;
-      const footerHeight = footerRef.current?.offsetHeight || 0;
-      
-      // Calculate remaining height for the chat area
-      setChatAreaHeight(`calc(100vh - ${headerHeight + footerHeight}px)`);
     };
 
     computeLayout();
@@ -188,8 +191,29 @@ const ChatScreen = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Check if user is scrolled to bottom
+  const checkIfAtBottom = () => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      const isBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 100;
+      setIsAtBottom(isBottom);
+      setShowScrollButton(!isBottom);
+    }
+  };
+
+  // Handle scroll event
+  const handleScroll = () => {
+    checkIfAtBottom();
+  };
+
+  // Auto-scroll only if user is already at bottom
   useEffect(() => {
-    scrollToBottom();
+    if (isAtBottom) {
+      scrollToBottom();
+    } else {
+      // Show scroll button when new message arrives and user is not at bottom
+      setShowScrollButton(true);
+    }
   }, [messages]);
 
   // Initialize socket connection and event listeners
@@ -211,8 +235,15 @@ const ChatScreen = () => {
           sender: data.sender,
           message: data.message,
           timestamp: data.timestamp,
-          isOwn: data.sender === userName
+          isOwn: data.sender === userName,
+          id: data.id || `${Date.now()}-${Math.random()}`,
+          replyTo: data.replyTo || null,
+          reactions: {}
         });
+      });
+
+      socketService.onMessageReaction((data) => {
+        addReactionToMessage(data.messageId, data.userName, data.emoji);
       });
 
       socketService.onUserJoined((data) => {
@@ -375,13 +406,23 @@ const ChatScreen = () => {
       ) {
         setShowEmojiPicker(false);
       }
+      
+      // Close reaction picker when clicking outside
+      if (showReactionPicker && !event.target.closest('.emoji-picker-react')) {
+        setShowReactionPicker(null);
+      }
+      
+      // Close message actions when clicking outside
+      if (selectedMessageId && !event.target.closest('[data-message-id]')) {
+        setSelectedMessageId(null);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showEmojiPicker]);
+  }, [showEmojiPicker, showReactionPicker, selectedMessageId]);
 
   const loadChatHistory = async () => {
     try {
@@ -391,7 +432,10 @@ const ChatScreen = () => {
           sender: chat.sender,
           message: chat.message,
           timestamp: chat.timestamp,
-          isOwn: chat.sender === userName
+          isOwn: chat.sender === userName,
+          id: chat.id || chat._id || `${Date.now()}-${Math.random()}`,
+          replyTo: chat.replyTo || null,
+          reactions: chat.reactions || {}
         }));
         setMessages(formattedMessages);
       }
@@ -404,12 +448,39 @@ const ChatScreen = () => {
     e.preventDefault();
     if (!message.trim()) return;
 
-    // Send via socket
-    socketService.sendMessage(roomId, message.trim());
+    // Send via socket with replyTo if replying
+    socketService.sendMessage(roomId, message.trim(), replyingTo?.id);
 
-    // Clear input
+    // Clear input and reply state
     setMessage('');
+    setReplyingTo(null);
     handleStopTyping();
+  };
+
+  const handleMessageClick = (messageId) => {
+    // Toggle selection - if clicking same message, deselect
+    setSelectedMessageId(selectedMessageId === messageId ? null : messageId);
+  };
+
+  const handleReply = (msg) => {
+    setReplyingTo(msg);
+    setSelectedMessageId(null);
+    // Focus on input field
+    document.querySelector('input[type="text"]')?.focus();
+  };
+
+  const handleReact = (messageId) => {
+    setShowReactionPicker(messageId);
+    setSelectedMessageId(null);
+  };
+
+  const handleEmojiReact = (emojiData, messageId) => {
+    socketService.reactToMessage(roomId, messageId, emojiData.emoji);
+    setShowReactionPicker(null);
+  };
+
+  const handleCancelReply = () => {
+    setReplyingTo(null);
   };
 
   const handleTyping = () => {
@@ -462,6 +533,7 @@ const ChatScreen = () => {
         addNotification({ type: 'info', message: `Uploading "${file.name}"...` });
         
         const response = await fileUploadService.uploadFile(file);
+        console.log("File Upload response!", response);
         
         if (response.success && response.url) {
           // Send the file URL as a message to the chat
@@ -602,7 +674,7 @@ const ChatScreen = () => {
 
   return (
     <div className={`
-      h-screen w-full flex flex-col overflow-hidden
+      h-screen w-full flex flex-col overflow-hidden fixed inset-0
       ${isDarkMode
         ? 'bg-black text-white'
         : 'bg-white text-black'
@@ -612,7 +684,7 @@ const ChatScreen = () => {
       <div 
         ref={headerRef}
         className={`
-          flex-shrink-0 p-3 sm:p-4 border-b z-30
+          sticky top-0 flex-shrink-0 p-3 sm:p-4 border-b z-30
           ${isDarkMode
             ? 'border-white/20 bg-black'
             : 'border-black/20 bg-white'
@@ -714,7 +786,7 @@ const ChatScreen = () => {
       </div>
 
       {/* Messages - Scrollable area and Room Info Modal Container */}
-      <div className="relative flex-1 overflow-hidden">
+      <div className="relative flex-1 overflow-hidden flex flex-col">
         {/* Room Info Panel - Responsive */}
         {showRoomInfo && (
           <>
@@ -828,9 +900,10 @@ const ChatScreen = () => {
 
         {/* Chat Messages */}
         <div
-          className="overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-4 custom-scrollbar"
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-4 custom-scrollbar relative"
           style={{
-            height: chatAreaHeight,
             WebkitOverflowScrolling: 'touch'
           }}
         >
@@ -878,38 +951,150 @@ const ChatScreen = () => {
                   </div>
                 ) : (
                   /* Regular text message */
-                  <div className={`
-                    max-w-[90%] sm:max-w-[85%] md:max-w-lg px-3 sm:px-4 py-2 sm:py-2 rounded-2xl border-2 break-words
-                    ${msg.isOwn
-                      ? isDarkMode
-                        ? 'bg-white text-black border-white'
-                        : 'bg-black text-white border-black'
-                      : isDarkMode
-                        ? 'bg-black text-white border-white'
-                        : 'bg-white text-black border-black'
-                    }
-                  `}>
-                    {!msg.isOwn && (
-                      <div 
-                        className="text-xs font-bold mb-2 px-2 py-1 rounded-full inline-block w-fit border"
-                        style={{
-                          backgroundColor: getUsernameColor(msg.sender),
-                          color: getContrastTextColor(getUsernameColor(msg.sender)),
-                          borderColor: getUsernameColor(msg.sender)
-                        }}
-                      >
-                        {msg.sender}
+                  <div className="max-w-[90%] sm:max-w-[85%] md:max-w-lg" data-message-id={msg.id}>
+                    <div 
+                      onClick={() => !msg.isSystem && handleMessageClick(msg.id)}
+                      className={`
+                        px-3 sm:px-4 py-2 sm:py-2 rounded-2xl border-2 break-words cursor-pointer
+                        transition-all duration-200
+                        ${selectedMessageId === msg.id ? 'ring-2 ring-offset-2 ring-blue-500' : ''}
+                        ${msg.isOwn
+                          ? isDarkMode
+                            ? 'bg-white text-black border-white hover:bg-gray-100'
+                            : 'bg-black text-white border-black hover:bg-gray-900'
+                          : isDarkMode
+                            ? 'bg-black text-white border-white hover:bg-gray-900'
+                            : 'bg-white text-black border-black hover:bg-gray-100'
+                        }
+                      `}
+                    >
+                      {!msg.isOwn && (
+                        <div 
+                          className="text-xs font-bold mb-2 px-2 py-1 rounded-full inline-block w-fit border"
+                          style={{
+                            backgroundColor: getUsernameColor(msg.sender),
+                            color: getContrastTextColor(getUsernameColor(msg.sender)),
+                            borderColor: getUsernameColor(msg.sender)
+                          }}
+                        >
+                          {msg.sender}
+                        </div>
+                      )}
+                      
+                      {/* Show replied-to message if this is a reply */}
+                      {msg.replyTo && (
+                        <div className={`
+                          mb-2 p-2 rounded-lg border-l-4 text-xs
+                          ${isDarkMode ? 'bg-white/10 border-white/30' : 'bg-black/10 border-black/30'}
+                        `}>
+                          <div className="font-semibold mb-1 text-xs sm:text-sm">
+                            ↩ Replying to: {messages.find(m => m.id === msg.replyTo)?.sender || 'Unknown'}
+                          </div>
+                          <div className="truncate opacity-70 text-xs">
+                            {messages.find(m => m.id === msg.replyTo)?.message || 'Message not found'}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="text-sm whitespace-pre-wrap break-words">
+                        {msg.message}
+                      </div>
+                      
+                      {/* Reactions */}
+                      {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {Object.entries(msg.reactions).map(([emoji, users]) => (
+                            <button
+                              key={emoji}
+                              onClick={() => {
+                                // Show who reacted
+                                addNotification({
+                                  type: 'info',
+                                  message: `${users.join(', ')} reacted with ${emoji}`
+                                });
+                              }}
+                              className={`
+                                px-2 py-1 rounded-full text-xs sm:text-sm flex items-center gap-1
+                                transition-all duration-200 active:scale-95
+                                min-h-[32px] min-w-[44px]
+                                ${isDarkMode ? 'bg-white/20 hover:bg-white/30' : 'bg-black/10 hover:bg-black/20'}
+                              `}
+                              title={users.join(', ')}
+                            >
+                              <span className="text-base">{emoji}</span>
+                              <span className="font-medium">{users.length}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div className={`
+                        text-xs mt-1 opacity-70
+                        ${msg.isOwn ? 'text-right' : 'text-left'}
+                      `}>
+                        {formatTimestamp(msg.timestamp)}
+                      </div>
+                    </div>
+                    
+                    {/* Action Buttons - Show when message is selected */}
+                    {selectedMessageId === msg.id && !msg.isSystem && (
+                      <div className="flex gap-2 mt-2 justify-center animate-fadeIn">
+                        <button
+                          onClick={() => handleReply(msg)}
+                          className={`
+                            flex items-center gap-1 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium
+                            transition-all duration-200 active:scale-95
+                            min-h-[44px] sm:min-h-auto
+                            ${isDarkMode
+                              ? 'bg-white/10 hover:bg-white/20 text-white border border-white/30'
+                              : 'bg-black/10 hover:bg-black/20 text-black border border-black/30'
+                            }
+                          `}
+                        >
+                          <Reply className="w-4 h-4" />
+                          <span className="hidden xs:inline">Reply</span>
+                        </button>
+                        <button
+                          onClick={() => handleReact(msg.id)}
+                          className={`
+                            flex items-center gap-1 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium
+                            transition-all duration-200 active:scale-95
+                            min-h-[44px] sm:min-h-auto
+                            ${isDarkMode
+                              ? 'bg-white/10 hover:bg-white/20 text-white border border-white/30'
+                              : 'bg-black/10 hover:bg-black/20 text-black border border-black/30'
+                            }
+                          `}
+                        >
+                          <Heart className="w-4 h-4" />
+                          <span className="hidden xs:inline">React</span>
+                        </button>
                       </div>
                     )}
-                    <div className="text-sm whitespace-pre-wrap break-words">
-                      {msg.message}
-                    </div>
-                    <div className={`
-                      text-xs mt-1 opacity-70
-                      ${msg.isOwn ? 'text-right' : 'text-left'}
-                    `}>
-                      {formatTimestamp(msg.timestamp)}
-                    </div>
+                    
+                    {/* Reaction Picker - Show when reacting to this message */}
+                    {showReactionPicker === msg.id && (
+                      <div className="mt-2 relative">
+                        <div className={`
+                          absolute z-50
+                          ${msg.isOwn 
+                            ? 'bottom-full right-0 mb-2' 
+                            : 'bottom-full left-0 mb-2'
+                          }
+                          sm:left-1/2 sm:transform sm:-translate-x-1/2
+                        `}>
+                          <EmojiPicker
+                            onEmojiClick={(emojiData) => handleEmojiReact(emojiData, msg.id)}
+                            theme={isDarkMode ? 'dark' : 'light'}
+                            height={300}
+                            width={Math.min(280, window.innerWidth - 40)}
+                            previewConfig={{ showPreview: false }}
+                            skinTonesDisabled={true}
+                            searchDisabled={false}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )
               )}
@@ -941,6 +1126,27 @@ const ChatScreen = () => {
           )}
 
           <div ref={messagesEndRef} />
+
+          {/* Scroll to Bottom Button */}
+          {showScrollButton && (
+            <button
+              onClick={() => {
+                scrollToBottom();
+                setShowScrollButton(false);
+              }}
+              className={`
+                fixed bottom-24 right-4 sm:bottom-28 sm:right-6 p-3 rounded-full shadow-lg z-40
+                transition-all duration-300 transform hover:scale-110 border-2
+                ${isDarkMode
+                  ? 'bg-white text-black border-white hover:bg-gray-100'
+                  : 'bg-black text-white border-black hover:bg-gray-900'
+                }
+              `}
+              title="Scroll to bottom"
+            >
+              <ArrowDown className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -948,14 +1154,44 @@ const ChatScreen = () => {
       <div 
         ref={footerRef}
         className={`
-          flex-shrink-0 p-2 sm:p-4 border-t z-30
+          sticky bottom-0 flex-shrink-0 border-t z-30
           ${isDarkMode
             ? 'border-white/20 bg-black'
             : 'border-black/20 bg-white'
           }
         `}
       >
-        <form onSubmit={handleSendMessage} className="flex gap-2 sm:gap-3 max-w-4xl mx-auto items-end">
+        {/* Reply Preview */}
+        {replyingTo && (
+          <div className={`
+            p-2 sm:p-3 border-b flex items-start sm:items-center justify-between gap-2
+            ${isDarkMode ? 'border-white/20 bg-white/5' : 'border-black/20 bg-black/5'}
+          `}>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs sm:text-sm font-semibold mb-1 flex items-center gap-1">
+                <Reply className="w-3 h-3 sm:w-4 sm:h-4" />
+                Replying to {replyingTo.sender}
+              </div>
+              <div className="text-xs opacity-70 truncate">
+                {replyingTo.message}
+              </div>
+            </div>
+            <button
+              onClick={handleCancelReply}
+              className={`
+                ml-2 p-2 rounded-full transition-colors flex-shrink-0
+                min-h-[44px] min-w-[44px] sm:min-h-auto sm:min-w-auto flex items-center justify-center
+                ${isDarkMode ? 'hover:bg-white/10 active:bg-white/20' : 'hover:bg-black/10 active:bg-black/20'}
+              `}
+              title="Cancel reply"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        
+        <div className="p-2 sm:p-4">
+          <form onSubmit={handleSendMessage} className="flex gap-2 sm:gap-3 max-w-4xl mx-auto items-end">
           <input
             type="text"
             value={message}
@@ -1066,6 +1302,7 @@ const ChatScreen = () => {
             </button>
           </div>
         </form>
+        </div>
       </div>
 
       {/* Confirmation Modal */}

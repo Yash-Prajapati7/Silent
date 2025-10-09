@@ -1,0 +1,140 @@
+/* Mobile-specific enhancements for SilentChat */
+
+/* Touch-friendly animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Mobile-optimized touch targets */
+@media (max-width: 640px) {
+  button, a, input[type="checkbox"], input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Prevent text selection on buttons for better mobile UX */
+button {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Smooth momentum scrolling for iOS */
+.custom-scrollbar {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Extra small breakpoint for very small phones (375px+) */
+@media (min-width: 375px) {
+  .xs\:inline {
+    display: inline;
+  }
+  
+  .xs\:block {
+    display: block;
+  }
+  
+  .xs\:flex {
+    display: flex;
+  }
+}
+
+/* Prevent zoom on input focus for iOS */
+@supports (-webkit-touch-callout: none) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Active state for better touch feedback */
+button:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease-in-out;
+}
+
+/* Emoji picker positioning fix for mobile */
+.emoji-picker-react {
+  max-width: calc(100vw - 2rem) !important;
+}
+
+@media (max-width: 640px) {
+  .emoji-picker-react {
+    max-width: calc(100vw - 1rem) !important;
+  }
+}
+
+/* Better tap highlighting */
+* {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Reaction button touch optimization */
+.reaction-button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Message action buttons mobile spacing */
+@media (max-width: 640px) {
+  .message-actions {
+    gap: 0.75rem;
+    padding: 0.5rem;
+  }
+}
+
+/* Reply preview mobile optimization */
+@media (max-width: 640px) {
+  .reply-preview {
+    padding: 0.75rem;
+  }
+  
+  .reply-preview-text {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}
+
+/* Scroll button mobile positioning */
+@media (max-width: 640px) {
+  .scroll-to-bottom {
+    bottom: 6rem;
+    right: 1rem;
+  }
+}
+
+/* Message bubble mobile optimization */
+@media (max-width: 640px) {
+  .message-bubble {
+    max-width: 90%;
+    font-size: 0.875rem;
+  }
+  
+  .message-bubble-content {
+    padding: 0.625rem 0.875rem;
+  }
+}
+
+/* Reaction display mobile */
+@media (max-width: 640px) {
+  .message-reactions {
+    gap: 0.375rem;
+  }
+  
+  .reaction-badge {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}

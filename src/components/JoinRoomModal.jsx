@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Lock, Loader2 } from 'lucide-react';
+import { ArrowLeft, Lock, Loader2, Dice6 } from 'lucide-react';
 import Modal from './Modal';
 import { useIsDarkMode } from '../stores/themeStore';
 import { 
@@ -32,9 +32,25 @@ const JoinRoomModal = () => {
   const [requiresCreatorPassword, setRequiresCreatorPassword] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingName, setIsGeneratingName] = useState(false);
   const [error, setError] = useState('');
 
   const isOpen = currentState === APP_STATES.JOINING;
+
+  const generateRandomName = async () => {
+    try {
+      setIsGeneratingName(true);
+      const response = await apiService.getRandomNames(1);
+      if (response.success && response.names.length > 0) {
+        setLocalUserName(response.names[0]);
+        setError('');
+      }
+    } catch (error) {
+      setError('Failed to generate random name');
+    } finally {
+      setIsGeneratingName(false);
+    }
+  };
 
   const handleClose = () => {
     setStep(1);
@@ -342,25 +358,43 @@ const JoinRoomModal = () => {
           Choose a username to join room <span className="font-mono font-bold">{roomId}</span>
         </p>
         
-        <input
-          type="text"
-          value={localUserName}
-          onChange={(e) => {
-            setLocalUserName(e.target.value);
-            setError('');
-          }}
-          placeholder="Enter your username"
-          className={`
-            w-full px-4 py-3 rounded-lg border-2 transition-colors duration-200
-            ${isDarkMode
-              ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-white focus:bg-gray-700'
-              : 'bg-white border-gray-300 text-black placeholder-gray-500 focus:border-black focus:bg-gray-50'
-            }
-            focus:outline-none
-          `}
-          maxLength={20}
-          autoComplete="off"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            value={localUserName}
+            onChange={(e) => {
+              setLocalUserName(e.target.value);
+              setError('');
+            }}
+            placeholder="Enter your username"
+            className={`
+              w-full px-4 py-3 pr-12 rounded-lg border-2 transition-colors duration-200
+              ${isDarkMode
+                ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-white focus:bg-gray-700'
+                : 'bg-white border-gray-300 text-black placeholder-gray-500 focus:border-black focus:bg-gray-50'
+              }
+              focus:outline-none
+            `}
+            maxLength={20}
+            autoComplete="off"
+          />
+          <button
+            type="button"
+            onClick={generateRandomName}
+            disabled={isGeneratingName}
+            className={`
+              absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all duration-200
+              ${isDarkMode
+                ? 'text-white hover:bg-white/10 disabled:text-gray-500'
+                : 'text-black hover:bg-black/10 disabled:text-gray-400'
+              }
+              disabled:cursor-not-allowed
+            `}
+            title="Generate random username"
+          >
+            <Dice6 className={`w-5 h-5 ${isGeneratingName ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
         
         {error && (
           <p className="text-red-500 text-sm text-center">{error}</p>

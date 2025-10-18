@@ -54,17 +54,33 @@ export const useAppStore = create(
         }),
 
         addReactionToMessage: (messageId, userName, emoji) => set((state) => ({
-          messages: state.messages.map(msg =>
-            msg.id === messageId
-              ? {
-                  ...msg,
-                  reactions: {
-                    ...msg.reactions,
-                    [emoji]: [...(msg.reactions[emoji] || []), userName]
-                  }
-                }
-              : msg
-          )
+          messages: state.messages.map(msg => {
+            if (msg.id === messageId) {
+              const currentReactions = msg.reactions || {};
+              const usersWithEmoji = currentReactions[emoji] || [];
+              
+              // Toggle reaction: remove if user already reacted, add if not
+              const updatedUsers = usersWithEmoji.includes(userName)
+                ? usersWithEmoji.filter(u => u !== userName)
+                : [...usersWithEmoji, userName];
+              
+              // Create new reactions object
+              const newReactions = { ...currentReactions };
+              
+              // Remove emoji key if no users have it, otherwise update
+              if (updatedUsers.length === 0) {
+                delete newReactions[emoji];
+              } else {
+                newReactions[emoji] = updatedUsers;
+              }
+              
+              return {
+                ...msg,
+                reactions: newReactions
+              };
+            }
+            return msg;
+          })
         })),
 
         updateParticipants: (participants) => set({ participants }),

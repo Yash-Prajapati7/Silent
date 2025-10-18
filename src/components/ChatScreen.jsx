@@ -433,9 +433,11 @@ const ChatScreen = () => {
           message: chat.message,
           timestamp: chat.timestamp,
           isOwn: chat.sender === userName,
-          id: chat.id || chat._id || `${Date.now()}-${Math.random()}`,
+          // Use MongoDB _id, tempId (for buffered messages), or fallback
+          id: chat._id || chat.tempId || chat.id || `${Date.now()}-${Math.random()}`,
           replyTo: chat.replyTo || null,
-          reactions: chat.reactions || {}
+          // Ensure reactions is a plain object
+          reactions: chat.reactions && typeof chat.reactions === 'object' ? chat.reactions : {}
         }));
         setMessages(formattedMessages);
       }

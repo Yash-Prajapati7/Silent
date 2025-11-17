@@ -675,8 +675,10 @@ const ChatScreen = () => {
   if (!isOpen) return null;
 
   return (
-    <div className={`
-      h-screen w-full flex flex-col overflow-hidden fixed inset-0
+    <div
+      style={{ minHeight: '100dvh' }}
+      className={`
+      w-full flex flex-col overflow-hidden fixed inset-0
       ${isDarkMode
         ? 'bg-black text-white'
         : 'bg-white text-black'
@@ -1162,6 +1164,7 @@ const ChatScreen = () => {
             : 'border-black/20 bg-white'
           }
         `}
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {/* Reply Preview */}
         {replyingTo && (

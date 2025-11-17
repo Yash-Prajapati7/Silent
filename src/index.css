@@ -10,9 +10,12 @@
 html, body {
   height: 100%;
   width: 100%;
-  overflow: hidden; /* Prevent body scrolling */
-  position: fixed; /* Lock the body */
-  inset: 0; /* Cover the viewport */
+  /* Keep normal scrolling behavior on mobile so the on-screen keyboard
+     can resize the viewport and elements like sticky footers remain visible.
+     Previously the body was fixed and overflow hidden which causes the input
+     to be overlapped by mobile keyboards. */
+  overflow: auto;
+  position: relative;
 }
 
 body {

@@ -32,7 +32,7 @@ const HomeScreen = () => {
   const generateRandomName = async () => {
     try {
       setIsLoading(true);
-      const response = await apiService.getRandomNames(1);
+      const response = await apiService.getRandomNames(10);
       if (response.success && response.names.length > 0) {
         setUserName(response.names[0]);
       }

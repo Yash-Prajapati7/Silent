@@ -5,7 +5,7 @@ export const useThemeStore = create(
   persist(
     (set, get) => ({
       // State
-      isDarkMode: true, // Default to dark mode
+      isDarkMode: false, // Default to light mode
 
       // Actions
       toggleTheme: () => set((state) => ({

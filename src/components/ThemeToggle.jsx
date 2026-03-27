@@ -16,18 +16,13 @@ const ThemeToggle = ({ inline = false, showFixed = false }) => {
       onClick={toggleTheme}
       className={`
         ${inline
-          ? 'p-2 rounded-lg transition-all duration-300 border-2'
-          : 'fixed top-4 right-4 z-50 p-3 rounded-full transition-all duration-300 border'
+          ? 'p-2.5 rounded-md transition-all duration-200 border-2 neo-btn'
+          : 'fixed top-4 right-4 z-50 p-2.5 rounded-md transition-all duration-200 border-2 neo-btn'
         }
         ${isDarkMode
-          ? inline
-            ? 'bg-white text-black border-white hover:bg-black hover:text-white'
-            : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
-          : inline
-            ? 'bg-black text-white border-black hover:bg-white hover:text-black'
-            : 'bg-black/10 hover:bg-black/20 text-black border-black/20'
+          ? 'text-[#FAFAFA] bg-[#111111] border-white neo-dark hover:bg-[#2f60ff]'
+          : 'text-[#111111] bg-[#fffaf5] border-black neo-light hover:bg-[#ffe500]'
         }
-        hover:scale-110 active:scale-95
       `}
       aria-label="Toggle theme"
     >

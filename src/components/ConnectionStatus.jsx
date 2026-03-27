@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wifi, WifiOff, AlertCircle } from 'lucide-react';
+import { WifiOff, AlertCircle } from 'lucide-react';
 import { useIsDarkMode } from '../stores/themeStore';
 import { apiService } from '../services/api';
 
@@ -36,10 +36,10 @@ const ConnectionStatus = () => {
 
   return (
     <div className={`
-      fixed top-16 right-4 z-40 p-3 rounded-lg border shadow-lg
+      fixed top-16 right-4 z-40 p-3 rounded-lg border-2
       ${isDarkMode 
-        ? 'bg-red-900 border-red-700 text-red-200' 
-        : 'bg-red-100 border-red-300 text-red-800'
+        ? 'bg-[#111111] border-white text-[#ff8f8f] neo-dark' 
+        : 'bg-[#fffaf5] border-black text-[#a31717] neo-light'
       }
       flex items-center gap-2 text-sm
     `}>

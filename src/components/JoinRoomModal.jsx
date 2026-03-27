@@ -171,12 +171,13 @@ const JoinRoomModal = () => {
           }}
           placeholder="Room ID"
           className={`
-            w-full px-4 py-3 rounded-lg border text-center text-2xl font-mono
-            focus:outline-none focus:ring-2 transition-colors
+            w-full px-4 py-3 rounded-md border text-center text-2xl font-mono
+            focus:outline-none transition-colors
             ${isDarkMode
-              ? 'bg-gray-900 border-gray-600 text-white focus:ring-white/30 placeholder-gray-500'
-              : 'bg-gray-50 border-gray-300 text-black focus:ring-black/30 placeholder-gray-400'
+              ? 'bg-[#171717] border-zinc-800 text-[#FAFAFA] placeholder-[#A3A3A3] focus:border-zinc-500'
+              : 'bg-[#F4F4F5] border-zinc-200 text-[#09090B] placeholder-[#71717A] focus:border-zinc-400'
             }
+            focus:ring-1 ${isDarkMode ? 'focus:ring-zinc-500' : 'focus:ring-zinc-400'}
           `}
           maxLength={4}
           autoComplete="off"
@@ -191,26 +192,26 @@ const JoinRoomModal = () => {
             type="button"
             onClick={handleClose}
             className={`
-              flex-1 py-3 px-4 rounded-lg font-medium transition-colors
+              flex-1 py-4 px-6 rounded-md font-medium transition-colors border
               ${isDarkMode
-                ? 'bg-gray-800 text-white hover:bg-gray-700 border border-gray-600'
-                : 'bg-gray-200 text-black hover:bg-gray-300 border border-gray-400'
+                ? 'bg-transparent text-[#FAFAFA] hover:bg-zinc-800 border-zinc-800'
+                : 'bg-transparent text-[#09090B] hover:bg-zinc-100 border-zinc-200'
               }
             `}
           >
             Cancel
           </button>
-          
+
           <button
             type="submit"
             disabled={roomId.length !== 4 || isLoading}
             className={`
-              flex-1 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2
+              flex-1 py-4 px-6 rounded-md font-bold transition-colors flex items-center justify-center gap-2 border-2 neo-btn
               ${roomId.length === 4 && !isLoading
                 ? isDarkMode
-                  ? 'bg-white text-black hover:bg-gray-100'
-                  : 'bg-black text-white hover:bg-gray-900'
-                : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                  ? 'bg-[#ffe500] text-[#111111] border-white neo-dark hover:bg-[#ffdd00]'
+                  : 'bg-[#2f60ff] text-[#FFFFFF] border-black neo-light hover:bg-[#2450df]'
+                : 'bg-zinc-800 text-[#A3A3A3] border-zinc-700 cursor-not-allowed'
               }
             `}
           >
@@ -262,10 +263,10 @@ const JoinRoomModal = () => {
             }}
             placeholder="Enter room password"
             className={`
-              w-full px-4 py-3 rounded-lg border-2 text-center transition-colors duration-200
+              w-full px-4 py-3 rounded-lg border-2 text-center transition-colors duration-200 font-medium
               ${isDarkMode
-                ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-white focus:bg-gray-700'
-                : 'bg-white border-gray-300 text-black placeholder-gray-500 focus:border-black focus:bg-gray-50'
+                ? 'bg-[#111111] border-white text-white placeholder-gray-400 focus:border-[#ffe500]'
+                : 'bg-[#fffaf5] border-black text-black placeholder-gray-500 focus:border-[#2f60ff]'
               }
               focus:outline-none
             `}
@@ -285,10 +286,10 @@ const JoinRoomModal = () => {
             }}
             placeholder="Enter creator password"
             className={`
-              w-full px-4 py-3 rounded-lg border-2 text-center transition-colors duration-200
+              w-full px-4 py-3 rounded-lg border-2 text-center transition-colors duration-200 font-medium
               ${isDarkMode
-                ? 'bg-gray-800 border-green-600 text-white placeholder-gray-400 focus:border-green-500 focus:bg-gray-700'
-                : 'bg-white border-green-300 text-black placeholder-gray-500 focus:border-green-500 focus:bg-gray-50'
+                ? 'bg-[#111111] border-white text-white placeholder-gray-400 focus:border-[#b7f5cb]'
+                : 'bg-[#fffaf5] border-black text-black placeholder-gray-500 focus:border-[#2f60ff]'
               }
               focus:outline-none
             `}
@@ -321,12 +322,12 @@ const JoinRoomModal = () => {
             type="submit"
             disabled={(requiresPassword && !password.trim()) || (requiresCreatorPassword && !creatorPassword.trim()) || isLoading}
             className={`
-              flex-1 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2
+              flex-1 py-3 px-4 rounded-lg font-bold transition-colors flex items-center justify-center gap-2 border-2 neo-btn
               ${((requiresPassword && password.trim()) || (requiresCreatorPassword && creatorPassword.trim()) || (!requiresPassword && !requiresCreatorPassword)) && !isLoading
                 ? isDarkMode
-                  ? 'bg-white text-black hover:bg-gray-100'
-                  : 'bg-black text-white hover:bg-gray-900'
-                : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                  ? 'bg-[#b7f5cb] text-[#111111] border-white neo-dark hover:bg-[#9cedb6]'
+                  : 'bg-[#ff2d2d] text-white border-black neo-light hover:bg-[#e72626]'
+                : 'bg-gray-500 text-gray-300 border-gray-500 cursor-not-allowed'
               }
             `}
           >
@@ -368,10 +369,10 @@ const JoinRoomModal = () => {
             }}
             placeholder="Enter your username"
             className={`
-              w-full px-4 py-3 pr-12 rounded-lg border-2 transition-colors duration-200
+                w-full px-4 py-3 pr-12 rounded-lg border-2 transition-colors duration-200 font-medium
               ${isDarkMode
-                ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-white focus:bg-gray-700'
-                : 'bg-white border-gray-300 text-black placeholder-gray-500 focus:border-black focus:bg-gray-50'
+                  ? 'bg-[#111111] border-white text-white placeholder-gray-400 focus:border-[#ffe500]'
+                  : 'bg-[#fffaf5] border-black text-black placeholder-gray-500 focus:border-[#2f60ff]'
               }
               focus:outline-none
             `}
@@ -420,12 +421,12 @@ const JoinRoomModal = () => {
             type="submit"
             disabled={!localUserName.trim() || isLoading}
             className={`
-              flex-1 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2
+              flex-1 py-3 px-4 rounded-lg font-bold transition-colors flex items-center justify-center gap-2 border-2 neo-btn
               ${localUserName.trim() && !isLoading
                 ? isDarkMode
-                  ? 'bg-white text-black hover:bg-gray-100'
-                  : 'bg-black text-white hover:bg-gray-900'
-                : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                  ? 'bg-[#ffe500] text-[#111111] border-white neo-dark hover:bg-[#ffdd00]'
+                  : 'bg-[#2f60ff] text-white border-black neo-light hover:bg-[#2450df]'
+                : 'bg-gray-500 text-gray-300 border-gray-500 cursor-not-allowed'
               }
             `}
           >

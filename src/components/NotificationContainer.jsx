@@ -19,32 +19,32 @@ const Notification = ({ notification, onClose }) => {
   };
 
   const getStyles = () => {
-    const base = 'flex items-center gap-3 p-4 rounded-lg border shadow-lg';
-    
+    const base = 'flex items-center gap-3 p-3 sm:p-4 rounded-md border-2';
+
     switch (notification.type) {
       case 'success':
         return `${base} ${
-          isDarkMode 
-            ? 'bg-green-900 border-green-700 text-green-200' 
-            : 'bg-green-100 border-green-300 text-green-800'
+          isDarkMode
+            ? 'bg-[#111111] border-white text-[#b7f5cb] neo-dark'
+            : 'bg-[#fffaf5] border-black text-[#146c43] neo-light'
         }`;
       case 'error':
         return `${base} ${
-          isDarkMode 
-            ? 'bg-red-900 border-red-700 text-red-200' 
-            : 'bg-red-100 border-red-300 text-red-800'
+          isDarkMode
+            ? 'bg-[#111111] border-white text-[#ff8f8f] neo-dark'
+            : 'bg-[#fffaf5] border-black text-[#a31717] neo-light'
         }`;
       case 'warning':
         return `${base} ${
-          isDarkMode 
-            ? 'bg-yellow-900 border-yellow-700 text-yellow-200' 
-            : 'bg-yellow-100 border-yellow-300 text-yellow-800'
+          isDarkMode
+            ? 'bg-[#111111] border-white text-[#ffe500] neo-dark'
+            : 'bg-[#fffaf5] border-black text-[#7d5b00] neo-light'
         }`;
       default:
         return `${base} ${
-          isDarkMode 
-            ? 'bg-blue-900 border-blue-700 text-blue-200' 
-            : 'bg-blue-100 border-blue-300 text-blue-800'
+          isDarkMode
+            ? 'bg-[#111111] border-white text-[#FAFAFA] neo-dark'
+            : 'bg-[#fffaf5] border-black text-[#111111] neo-light'
         }`;
     }
   };
@@ -56,8 +56,8 @@ const Notification = ({ notification, onClose }) => {
       <button
         onClick={() => onClose(notification.id)}
         className={`
-          p-1 rounded transition-colors
-          ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/10'}
+          p-1.5 rounded transition-colors border-2 neo-btn
+          ${isDarkMode ? 'hover:bg-[#ff2d2d] border-white' : 'hover:bg-[#ffe500] border-black'}
         `}
       >
         <X className="w-4 h-4" />
@@ -70,7 +70,7 @@ const NotificationContainer = ({ notifications, onClose }) => {
   if (!notifications.length) return null;
 
   return (
-    <div className="fixed top-20 right-4 z-50 space-y-2 max-w-sm">
+    <div className="fixed top-20 right-3 sm:right-4 z-50 space-y-2 w-[calc(100%-1.5rem)] sm:w-auto sm:max-w-sm">
       {notifications.map((notification) => (
         <Notification
           key={notification.id}

@@ -186,10 +186,10 @@ const CreateRoomModal = () => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter room password"
               className={`
-                w-full px-4 py-3 rounded-lg border-2 transition-colors duration-200
+                w-full px-4 py-3 rounded-md border-2 transition-colors duration-200 font-medium
                 ${isDarkMode
-                  ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-white focus:bg-gray-700'
-                  : 'bg-white border-gray-300 text-black placeholder-gray-500 focus:border-black focus:bg-gray-50'
+                  ? 'bg-[#111111] border-white text-[#FAFAFA] placeholder-[#A3A3A3] focus:border-[#ffe500]'
+                  : 'bg-[#fffaf5] border-black text-[#111111] placeholder-[#71717A] focus:border-[#2f60ff]'
                 }
                 focus:outline-none
               `}
@@ -239,10 +239,10 @@ const CreateRoomModal = () => {
               onChange={(e) => setCreatorPassword(e.target.value)}
               placeholder="Enter creator password"
               className={`
-                w-full px-4 py-3 rounded-lg border-2 transition-colors duration-200
+                w-full px-4 py-3 rounded-md border-2 transition-colors duration-200 font-medium
                 ${isDarkMode
-                  ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-white focus:bg-gray-700'
-                  : 'bg-white border-gray-300 text-black placeholder-gray-500 focus:border-black focus:bg-gray-50'
+                  ? 'bg-[#111111] border-white text-[#FAFAFA] placeholder-[#A3A3A3] focus:border-[#ffe500]'
+                  : 'bg-[#fffaf5] border-black text-[#111111] placeholder-[#71717A] focus:border-[#2f60ff]'
                 }
                 focus:outline-none
               `}
@@ -255,10 +255,10 @@ const CreateRoomModal = () => {
           type="submit"
           disabled={isLoading}
           className={`
-            w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2
+            w-full py-4 px-6 rounded-md font-bold transition-all duration-200 flex items-center justify-center space-x-2 border-2 neo-btn
             ${isDarkMode
-              ? 'bg-white text-black hover:bg-gray-100 disabled:bg-gray-600 disabled:text-gray-400'
-              : 'bg-black text-white hover:bg-gray-900 disabled:bg-gray-300 disabled:text-gray-500'
+              ? 'bg-[#ffe500] text-[#111111] border-white neo-dark hover:bg-[#ffdd00] disabled:bg-zinc-800 disabled:text-[#A3A3A3]'
+              : 'bg-[#2f60ff] text-[#FFFFFF] border-black neo-light hover:bg-[#2450df] disabled:bg-zinc-200 disabled:text-[#71717A]'
             }
             disabled:cursor-not-allowed
           `}
@@ -292,7 +292,7 @@ const CreateRoomModal = () => {
         {/* Room ID */}
         <div className={`
           p-4 rounded-lg border-2 border-dashed
-          ${isDarkMode ? 'border-gray-600 bg-gray-800/50' : 'border-gray-300 bg-gray-50'}
+          ${isDarkMode ? 'border-white bg-[#111111]' : 'border-black bg-[#fffaf5]'}
         `}>
           <p className={`text-xs mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             Room ID
@@ -304,10 +304,10 @@ const CreateRoomModal = () => {
             <button
               onClick={copyRoomId}
               className={`
-                p-2 rounded-lg transition-colors
+                p-2 rounded-lg transition-colors border-2 neo-btn
                 ${isDarkMode
-                  ? 'hover:bg-white/10 text-white'
-                  : 'hover:bg-black/10 text-black'
+                  ? 'hover:bg-[#ffe500] hover:text-[#111111] text-white border-white neo-dark'
+                  : 'hover:bg-[#2f60ff] hover:text-white text-black border-black neo-light'
                 }
               `}
               title="Copy room ID"
@@ -365,10 +365,10 @@ const CreateRoomModal = () => {
         onClick={handleJoinRoom}
         disabled={isLoading}
         className={`
-          w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2
+          w-full py-4 px-6 rounded-md font-bold transition-all duration-200 flex items-center justify-center space-x-2 border-2 neo-btn
           ${isDarkMode
-            ? 'bg-white text-black hover:bg-gray-100 disabled:bg-gray-600 disabled:text-gray-400'
-            : 'bg-black text-white hover:bg-gray-900 disabled:bg-gray-300 disabled:text-gray-500'
+            ? 'bg-[#b7f5cb] text-[#111111] border-white neo-dark hover:bg-[#9cedb6] disabled:bg-zinc-800 disabled:text-[#A3A3A3]'
+            : 'bg-[#ff2d2d] text-[#FFFFFF] border-black neo-light hover:bg-[#e72626] disabled:bg-zinc-200 disabled:text-[#71717A]'
           }
           disabled:cursor-not-allowed
         `}

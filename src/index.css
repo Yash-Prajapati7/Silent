@@ -1,7 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap');
 @import "tailwindcss";
 @import "./mobile-enhancements.css";
 
-/* Custom styles for SilentChat */
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -10,25 +10,87 @@
 html, body {
   height: 100%;
   width: 100%;
-  overflow: hidden; /* Prevent body scrolling */
-  position: fixed; /* Lock the body */
-  inset: 0; /* Cover the viewport */
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: black;
-  color: white;
+  background: #0a0a0a;
+  color: #fafafa;
 }
 
-/* Scrollbar styling for black and white theme */
+:root {
+  --neo-bg-light: #f4f0ec;
+  --neo-bg-dark: #000000;
+  --neo-text-light: #111111;
+  --neo-text-dark: #ffffff;
+  --neo-red: #ff2d2d;
+  --neo-blue: #2f60ff;
+  --neo-yellow: #ffe500;
+  --neo-mint: #b7f5cb;
+  --neo-lilac: #d7c9ff;
+  --neo-peach: #ffc2a6;
+  --neo-shadow-dark: 4px 4px 0 0 #ffffff;
+  --neo-shadow-light: 4px 4px 0 0 #111111;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.neo-card {
+  border: 3px solid;
+  border-radius: 0.9rem;
+}
+
+.neo-dark {
+  box-shadow: var(--neo-shadow-dark);
+}
+
+.neo-light {
+  box-shadow: var(--neo-shadow-light);
+}
+
+.neo-btn {
+  border: 3px solid;
+  border-radius: 0.8rem;
+  font-weight: 700;
+  transform: translate(0, 0);
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+.neo-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none !important;
+}
+
+.neo-grid-bg {
+  background-image:
+    linear-gradient(rgba(120, 120, 120, 0.4) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 120, 120, 0.4) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.neo-grid-bg-light {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -36,24 +98,15 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
+  background: #2f60ff;
+  border: 2px solid #000;
+  border-radius: 1px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: #ffe500;
 }
 
-/* Light theme scrollbar */
-.light ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.3);
-}
-
-.light ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.5);
-}
-
-/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -72,35 +125,6 @@ body {
   animation: slideIn 0.4s ease-out;
 }
 
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
-  50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* Blob animations for modern UI */
-@keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
-}
-
-.animate-blob {
-  animation: blob 7s infinite;
-}
-
 .animation-delay-2000 {
   animation-delay: 2s;
 }
@@ -117,7 +141,6 @@ body {
   animation-delay: 300ms;
 }
 
-/* Message animations */
 @keyframes messageSlideIn {
   from { 
     opacity: 0; 
@@ -148,9 +171,8 @@ body {
   animation: messageSlideInRight 0.3s ease-out;
 }
 
-/* Custom scrollbar for webkit browsers */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -158,16 +180,23 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.3);
-  border-radius: 3px;
+  background: #ff2d2d;
+  border: 2px solid #111;
+  border-radius: 0;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.5);
+  background: #2f60ff;
 }
 
-/* Ensure proper scrolling behavior */
 .custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+  scrollbar-width: auto;
+  scrollbar-color: #ff2d2d transparent;
+}
+
+@media (max-width: 640px) {
+  .neo-card,
+  .neo-btn {
+    border-width: 2px;
+  }
 }

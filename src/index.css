@@ -10,9 +10,9 @@
 html, body {
   height: 100%;
   width: 100%;
-  overflow: hidden;
-  position: fixed;
-  inset: 0;
+  overflow: hidden; /* Prevent body scrolling */
+  position: fixed; /* Lock the body */
+  inset: 0; /* Cover the viewport */
 }
 
 body {
